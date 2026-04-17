@@ -1671,8 +1671,8 @@ export default function App() {
       />
       <nav style={S.nav}>
         <div style={S.navLogo}>
-          <div style={S.logoBadge}>PL</div>
-          ProfitLens
+          <div style={S.logoBadge}></div>
+          Project Profitability
           <span
             style={{
               fontSize: 11,
