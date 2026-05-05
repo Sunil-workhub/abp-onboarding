@@ -2762,12 +2762,12 @@ function DashboardScreen({ onNavigate, savedInputs }) {
                       >
                         View →
                       </button>
-                      <button
+                      {/* <button
                         style={S.btn("primary")}
                         onClick={() => onNavigate("create", proj.id)}
                       >
                         + Analyse
-                      </button>
+                      </button> */}
                     </td>
                   </tr>
                 );
