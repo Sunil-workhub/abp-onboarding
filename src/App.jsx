@@ -1316,13 +1316,14 @@ function ActualTab({ project, rows, inputs, setInput, onShowMaterial }) {
       </th>
       <th style={thS(C.textMuted)}>Qty</th>
       <th style={thS(C.cyan)}>Act. Sales (₹)</th>
+      {/* Change 4: est mat after throughput */}
+      <th style={thS(C.amber)}>Est. Mat. (₹)</th>
+      <th style={thS(C.amber)}>Est. TP (₹)</th>
       {/* Change 4: act mat first */}
       <th style={thS(C.violet)}>Act. Mat. (₹)</th>
       <th style={thS(C.textMuted)}>FOC (₹)</th>
       <th style={thS(C.sky)}>Throughput (₹)</th>
-      {/* Change 4: est mat after throughput */}
-      <th style={thS(C.amber)}>Est. Mat. (₹)</th>
-      <th style={thS(C.amber)}>Est. TP (₹)</th>
+
       <th style={thS(C.violet)}>Commission</th>
       <th style={thS(C.violet)}>Freight</th>
       <th style={thS(C.violet)}>Packing</th>
@@ -1479,6 +1480,31 @@ function ActualTab({ project, rows, inputs, setInput, onShowMaterial }) {
                     ₹{fmt(c.actSales)}
                   </td>
                   {/* Change 4: act mat → throughput → est mat → est tp */}
+                  <td style={S.td}>
+                    <span
+                      style={{
+                        ...(estHasIssue ? S.redCell : {}),
+                        ...S.clickableCell,
+                        color: estHasIssue ? C.rose : C.amber,
+                        fontWeight: 600,
+                      }}
+                      title="Click to view estimated material breakdown"
+                      onClick={() => onShowMaterial(row, false)}
+                    >
+                      ₹{fmt(e.estMatCost)}
+                    </span>
+                  </td>
+                  <td
+                    style={{
+                      ...S.td,
+                      fontWeight: 700,
+                      color: e.throughput < 0 ? C.rose : C.amber,
+                      background:
+                        e.throughput < 0 ? "rgba(225,29,72,0.04)" : undefined,
+                    }}
+                  >
+                    ₹{fmt(e.throughput)}
+                  </td>
                   <td
                     style={{
                       ...S.td,
@@ -1512,31 +1538,7 @@ function ActualTab({ project, rows, inputs, setInput, onShowMaterial }) {
                   >
                     ₹{fmt(c.throughput)}
                   </td>
-                  <td style={S.td}>
-                    <span
-                      style={{
-                        ...(estHasIssue ? S.redCell : {}),
-                        ...S.clickableCell,
-                        color: estHasIssue ? C.rose : C.amber,
-                        fontWeight: 600,
-                      }}
-                      title="Click to view estimated material breakdown"
-                      onClick={() => onShowMaterial(row, false)}
-                    >
-                      ₹{fmt(e.estMatCost)}
-                    </span>
-                  </td>
-                  <td
-                    style={{
-                      ...S.td,
-                      fontWeight: 700,
-                      color: e.throughput < 0 ? C.rose : C.amber,
-                      background:
-                        e.throughput < 0 ? "rgba(225,29,72,0.04)" : undefined,
-                    }}
-                  >
-                    ₹{fmt(e.throughput)}
-                  </td>
+
                   <td style={S.td}>{inp(row, "commission")}</td>
                   <td style={S.td}>{inp(row, "freight")}</td>
                   <td style={S.td}>{inp(row, "packing")}</td>
