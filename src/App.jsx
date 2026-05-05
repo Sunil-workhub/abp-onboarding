@@ -83,7 +83,6 @@ function useMaterialCosts(rows) {
               const estItems = res.data?.estimatedMaterials || [];
               const actItems = res.data?.actualMaterials || [];
 
-              // Cost resolution: for MTO items use budgeted_Cost as fallback when cost is null/0
               const resolveItemCost = (item) => {
                 const c = Number(item.cost);
                 const isMissing =
@@ -111,7 +110,6 @@ function useMaterialCosts(rows) {
               const hasIncomplete = (items) =>
                 items.some((i) => i.cost == null || i.cost === "");
 
-              // For MTO: incomplete means cost is null/0 AND no budgeted_Cost either
               const hasMTOUnresolvable = (items) =>
                 items
                   .filter((i) => i.mC_Type === "MTO")
@@ -135,7 +133,6 @@ function useMaterialCosts(rows) {
                 estMatCost: sumItems(estItems),
                 actMatCost: sumItems(actItems),
                 estIncomplete: hasIncomplete(estItems),
-                // actIncomplete = true only if MTO has unresolvable missing (no cost AND no budget)
                 actIncomplete: hasMTOUnresolvable(actItems),
                 estItems,
                 actItems,
@@ -703,7 +700,6 @@ function MaterialCostModal({ title, items, onClose, isActual, oaNo, fgCode }) {
 
   const mtsItems = isActual ? items.filter((i) => i.mC_Type === "MTS") : [];
 
-  // MTO: sort so missing-cost items appear at top
   const mtoNeedsBudget = (item) => {
     const c = Number(item.cost);
     return (
@@ -756,10 +752,8 @@ function MaterialCostModal({ title, items, onClose, isActual, oaNo, fgCode }) {
     }
   };
 
-  // MTS total: raw cost only, no budget fallback
   const mtsTotal = mtsItems.reduce((s, i) => s + Number(i.cost ?? 0), 0);
 
-  // MTO total: cost takes priority; use budgeted_Cost (or edited value) as fallback when cost is missing/zero
   const mtoTotal = mtoItems.reduce((s, i) => {
     const id = i.actual_Cost_Id;
     const edited = budgetEdits[id];
@@ -780,7 +774,6 @@ function MaterialCostModal({ title, items, onClose, isActual, oaNo, fgCode }) {
     </div>
   );
 
-  // MTS: cost-only table
   const renderMTSTable = () => (
     <div style={{ padding: "0 16px 10px", overflowX: "auto" }}>
       <table style={{ ...S.table, minWidth: "unset", width: "100%" }}>
@@ -848,7 +841,6 @@ function MaterialCostModal({ title, items, onClose, isActual, oaNo, fgCode }) {
     </div>
   );
 
-  // MTO: cost column + budgeted cost input column (editable when cost is null/0), missing rows at top
   const renderMTOTable = () => (
     <div style={{ padding: "0 16px 10px", overflowX: "auto" }}>
       <table style={{ ...S.table, minWidth: "unset", width: "100%" }}>
@@ -961,7 +953,6 @@ function MaterialCostModal({ title, items, onClose, isActual, oaNo, fgCode }) {
   return (
     <div style={S.overlay} onClick={onClose}>
       <div style={S.modal} onClick={(e) => e.stopPropagation()}>
-        {/* Header */}
         <div style={S.modalHeader}>
           <div>
             <div style={S.modalTitle}>{title}</div>
@@ -996,7 +987,6 @@ function MaterialCostModal({ title, items, onClose, isActual, oaNo, fgCode }) {
         <div style={S.modalBody}>
           {isActual ? (
             <div style={{ paddingBottom: 4 }}>
-              {/* ── MTS SECTION ── */}
               {mtsItems.length > 0 && (
                 <>
                   <div
@@ -1054,7 +1044,6 @@ function MaterialCostModal({ title, items, onClose, isActual, oaNo, fgCode }) {
                 </>
               )}
 
-              {/* ── MTO SECTION ── */}
               {mtoItems.length > 0 && (
                 <>
                   <div
@@ -1123,7 +1112,6 @@ function MaterialCostModal({ title, items, onClose, isActual, oaNo, fgCode }) {
               )}
             </div>
           ) : (
-            /* Estimated: flat table */
             <div style={{ padding: "14px 16px" }}>
               <table style={{ ...S.table, minWidth: "unset" }}>
                 <thead>
@@ -1204,7 +1192,6 @@ function MaterialCostModal({ title, items, onClose, isActual, oaNo, fgCode }) {
           )}
         </div>
 
-        {/* Fixed footer with Save button — only shown for Actual MTO */}
         {showMTOFooter && (
           <div style={S.modalFooter}>
             <button
@@ -1243,6 +1230,7 @@ function MaterialCostModal({ title, items, onClose, isActual, oaNo, fgCode }) {
 }
 
 // ─── ACTUAL PROFITABILITY TAB ─────────────────────────────────────────────────
+// Change 4: Column order → act mat, throughput, est mat, est tp (then OVC inputs, contribution, fixed cost, op profit)
 function ActualTab({ project, rows, inputs, setInput, onShowMaterial }) {
   const totals = useMemo(() => {
     let actSales = 0,
@@ -1315,6 +1303,7 @@ function ActualTab({ project, rows, inputs, setInput, onShowMaterial }) {
     borderBottom: `2px solid ${color || C.borderLight}`,
   });
 
+  // Change 4: act mat → throughput → est mat → est tp
   const headerRow = (
     <tr>
       {["Project", "OA No", "FG Code"].map((h, i) => (
@@ -1327,9 +1316,11 @@ function ActualTab({ project, rows, inputs, setInput, onShowMaterial }) {
       </th>
       <th style={thS(C.textMuted)}>Qty</th>
       <th style={thS(C.cyan)}>Act. Sales (₹)</th>
+      {/* Change 4: act mat first */}
       <th style={thS(C.violet)}>Act. Mat. (₹)</th>
       <th style={thS(C.textMuted)}>FOC (₹)</th>
       <th style={thS(C.sky)}>Throughput (₹)</th>
+      {/* Change 4: est mat after throughput */}
       <th style={thS(C.amber)}>Est. Mat. (₹)</th>
       <th style={thS(C.amber)}>Est. TP (₹)</th>
       <th style={thS(C.violet)}>Commission</th>
@@ -1351,6 +1342,7 @@ function ActualTab({ project, rows, inputs, setInput, onShowMaterial }) {
       </td>
       <td style={S.totalTd()}></td>
       <td style={S.totalTd()}>₹{fmt(totals.actSales)}</td>
+      {/* Change 4: act mat → throughput → est mat → est tp */}
       <td style={S.totalTd()}>₹{fmt(totals.actMat)}</td>
       <td style={S.totalTd()}>₹{fmt(totals.foc)}</td>
       <td style={{ ...S.totalTd(), color: totals.tp < 0 ? C.rose : C.sky }}>
@@ -1486,7 +1478,7 @@ function ActualTab({ project, rows, inputs, setInput, onShowMaterial }) {
                   <td style={{ ...S.td, fontWeight: 600 }}>
                     ₹{fmt(c.actSales)}
                   </td>
-                  {/* Act. Mat. cell — red background on entire cell if MTO has unresolvable missing */}
+                  {/* Change 4: act mat → throughput → est mat → est tp */}
                   <td
                     style={{
                       ...S.td,
@@ -1588,6 +1580,8 @@ function ActualTab({ project, rows, inputs, setInput, onShowMaterial }) {
 }
 
 // ─── EST VS ACTUAL TAB ────────────────────────────────────────────────────────
+// Change 3: act sales → est mat → est tp → act mat → act tp → mat var → tp var → contribution → op profit
+// Change 5: mat var = act mat - est mat (was est - act)
 function EstVsActTab({ rows, inputs, onShowEstMat, onShowActMat }) {
   const thS = (color) => ({
     ...S.th(color),
@@ -1607,7 +1601,8 @@ function EstVsActTab({ rows, inputs, onShowEstMat, onShowActMat }) {
     rows.forEach((row) => {
       const estC = calcEstRow(row);
       const actC = calcActRow(row, inputs[row.detail_Id]);
-      const mv = estC.estMatCost - actC.actMatCost;
+      // Change 5: mat var = act mat - est mat
+      const mv = actC.actMatCost - estC.estMatCost;
       const tv = actC.throughput - estC.throughput;
       actSales += actC.actSales;
       estMat += estC.estMatCost;
@@ -1640,11 +1635,12 @@ function EstVsActTab({ rows, inputs, onShowEstMat, onShowActMat }) {
           value={`₹${fmt(totals.actSales)}`}
           accent={C.cyan}
         />
+        {/* Change 5: mat var sign flipped — positive now means over-spend (act > est), negative = under-spend */}
         <MetricCard
           label="Mat. Variance"
           value={`₹${fmt(totals.matVar)}`}
-          accent={totals.matVar >= 0 ? C.emerald : C.rose}
-          color={totals.matVar >= 0 ? C.emerald : C.rose}
+          accent={totals.matVar <= 0 ? C.emerald : C.rose}
+          color={totals.matVar <= 0 ? C.emerald : C.rose}
         />
         <MetricCard
           label="TP Variance"
@@ -1685,12 +1681,13 @@ function EstVsActTab({ rows, inputs, onShowEstMat, onShowActMat }) {
                 Description
               </th>
               <th style={thS(C.cyan)}>Act. Sales (₹)</th>
-              <th style={thS(C.violet)}>Est. Mat. (₹)</th>
+              {/* Change 3: est mat → est tp → act mat → act tp → mat var → tp var */}
+              <th style={thS(C.amber)}>Est. Mat. (₹)</th>
+              <th style={thS(C.amber)}>Est. TP (₹)</th>
               <th style={thS(C.violet)}>Act. Mat. (₹)</th>
-              <th style={thS(C.amber)}>Mat. Var (₹)</th>
-              <th style={thS(C.sky)}>Est. TP (₹)</th>
               <th style={thS(C.sky)}>Act. TP (₹)</th>
-              <th style={thS(C.amber)}>TP Var (₹)</th>
+              <th style={thS(C.rose)}>Mat. Var (₹)</th>
+              <th style={thS(C.emerald)}>TP Var (₹)</th>
               <th style={thS(C.emerald)}>Contribution (₹)</th>
               <th style={thS(C.cyan)}>Op. Profit (₹)</th>
             </tr>
@@ -1699,7 +1696,8 @@ function EstVsActTab({ rows, inputs, onShowEstMat, onShowActMat }) {
             {rows.map((row, ri) => {
               const estC = calcEstRow(row);
               const actC = calcActRow(row, inputs[row.detail_Id]);
-              const matVar = estC.estMatCost - actC.actMatCost;
+              // Change 5: mat var = act mat - est mat
+              const matVar = actC.actMatCost - estC.estMatCost;
               const tpVar = actC.throughput - estC.throughput;
               const estHasIssue = row._estMatIncomplete;
               const actHasIssue = row._actMatIncomplete;
@@ -1755,18 +1753,28 @@ function EstVsActTab({ rows, inputs, onShowEstMat, onShowActMat }) {
                   <td style={{ ...S.td, fontWeight: 600 }}>
                     ₹{fmt(actC.actSales)}
                   </td>
+                  {/* Change 3: est mat → est tp → act mat → act tp → mat var → tp var */}
                   <td style={S.td}>
                     <span
                       style={{
                         ...(estHasIssue ? S.redCell : {}),
                         ...S.clickableCell,
-                        color: estHasIssue ? C.rose : C.violet,
+                        color: estHasIssue ? C.rose : C.amber,
                         fontWeight: 600,
                       }}
                       onClick={() => onShowEstMat(row)}
                     >
                       ₹{fmt(estC.estMatCost)}
                     </span>
+                  </td>
+                  <td
+                    style={{
+                      ...S.td,
+                      fontWeight: 700,
+                      color: estC.throughput < 0 ? C.rose : C.amber,
+                    }}
+                  >
+                    ₹{fmt(estC.throughput)}
                   </td>
                   <td
                     style={{
@@ -1792,28 +1800,20 @@ function EstVsActTab({ rows, inputs, onShowEstMat, onShowActMat }) {
                     style={{
                       ...S.td,
                       fontWeight: 700,
-                      color: matVar >= 0 ? C.emerald : C.rose,
-                    }}
-                  >
-                    {matVar >= 0 ? "+" : ""}₹{fmt(matVar)}
-                  </td>
-                  <td
-                    style={{
-                      ...S.td,
-                      fontWeight: 700,
-                      color: estC.throughput < 0 ? C.rose : C.sky,
-                    }}
-                  >
-                    ₹{fmt(estC.throughput)}
-                  </td>
-                  <td
-                    style={{
-                      ...S.td,
-                      fontWeight: 700,
                       color: actC.throughput < 0 ? C.rose : C.sky,
                     }}
                   >
                     ₹{fmt(actC.throughput)}
+                  </td>
+                  {/* Change 5: mat var = act - est; positive = overspend (red), negative = saving (green) */}
+                  <td
+                    style={{
+                      ...S.td,
+                      fontWeight: 700,
+                      color: matVar <= 0 ? C.emerald : C.rose,
+                    }}
+                  >
+                    {matVar > 0 ? "+" : ""}₹{fmt(matVar)}
                   </td>
                   <td
                     style={{
@@ -1852,19 +1852,17 @@ function EstVsActTab({ rows, inputs, onShowEstMat, onShowActMat }) {
                 🔢 Grand Total
               </td>
               <td style={S.totalTd()}>₹{fmt(totals.actSales)}</td>
+              {/* Change 3: footer order matches header */}
               <td style={S.totalTd()}>₹{fmt(totals.estMat)}</td>
-              <td style={S.totalTd()}>₹{fmt(totals.actMat)}</td>
-              <td style={S.totalTd(totals.matVar >= 0)}>
-                {totals.matVar >= 0 ? "+" : ""}₹{fmt(totals.matVar)}
-              </td>
               <td
                 style={{
                   ...S.totalTd(),
-                  color: totals.estTP < 0 ? C.rose : C.sky,
+                  color: totals.estTP < 0 ? C.rose : C.amber,
                 }}
               >
                 ₹{fmt(totals.estTP)}
               </td>
+              <td style={S.totalTd()}>₹{fmt(totals.actMat)}</td>
               <td
                 style={{
                   ...S.totalTd(),
@@ -1872,6 +1870,10 @@ function EstVsActTab({ rows, inputs, onShowEstMat, onShowActMat }) {
                 }}
               >
                 ₹{fmt(totals.actTP)}
+              </td>
+              {/* Change 5: mat var coloring flipped */}
+              <td style={S.totalTd(totals.matVar <= 0)}>
+                {totals.matVar > 0 ? "+" : ""}₹{fmt(totals.matVar)}
               </td>
               <td style={S.totalTd(totals.tpVar >= 0)}>
                 {totals.tpVar >= 0 ? "+" : ""}₹{fmt(totals.tpVar)}
@@ -1891,8 +1893,9 @@ function EstVsActTab({ rows, inputs, onShowEstMat, onShowActMat }) {
 }
 
 // ─── VIEW SCREEN ──────────────────────────────────────────────────────────────
+// Change 2: default tab = "comparison" (est vs actual first), actual profitability second
 function ViewScreen({ pid, onNavigate, savedInputs, onSaveInputs }) {
-  const [tab, setTab] = useState("actual");
+  const [tab, setTab] = useState("comparison"); // Change 2: default to comparison
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [inputs, setInputsState] = useState(savedInputs[pid] || {});
@@ -1989,9 +1992,10 @@ function ViewScreen({ pid, onNavigate, savedInputs, onSaveInputs }) {
       </div>
     );
 
+  // Change 2: est vs actual first in tab order, actual profitability second
   const tabs = [
-    { key: "actual", label: "📈 Actual Profitability" },
     { key: "comparison", label: "⚖️ Est vs Actual" },
+    { key: "actual", label: "📈 Actual Profitability" },
   ];
 
   return (
@@ -2056,6 +2060,7 @@ function ViewScreen({ pid, onNavigate, savedInputs, onSaveInputs }) {
 }
 
 // ─── CREATE SCREEN ────────────────────────────────────────────────────────────
+// Change 2: default tab = "comparison"
 function CreateScreen({ onNavigate, savedInputs, onSaveInputs, initialPid }) {
   const [pendingProjects, setPendingProjects] = useState([]);
   const [loadingList, setLoadingList] = useState(true);
@@ -2071,7 +2076,7 @@ function CreateScreen({ onNavigate, savedInputs, onSaveInputs, initialPid }) {
       : {},
   );
   const [saving, setSaving] = useState(false);
-  const [tab, setTab] = useState("actual");
+  const [tab, setTab] = useState("comparison"); // Change 2: default to comparison
   const [matModal, setMatModal] = useState(null);
   const dropdownRef = useRef(null);
 
@@ -2195,9 +2200,10 @@ function CreateScreen({ onNavigate, savedInputs, onSaveInputs, initialPid }) {
     }
   }, []);
 
+  // Change 2: est vs actual first in tab order
   const tabs = [
-    { key: "actual", label: "📈 Actual Profitability" },
     { key: "comparison", label: "⚖️ Est vs Actual" },
+    { key: "actual", label: "📈 Actual Profitability" },
   ];
 
   return (
@@ -2442,6 +2448,7 @@ function CreateScreen({ onNavigate, savedInputs, onSaveInputs, initialPid }) {
 }
 
 // ─── DASHBOARD ────────────────────────────────────────────────────────────────
+// Change 1: Add Est. Throughput, Act. Throughput, Op. Profit columns; hide Status column
 function DashboardScreen({ onNavigate, savedInputs }) {
   const [projects, setProjects] = useState([]);
   const [totalRecords, setTotalRecords] = useState(0);
@@ -2546,7 +2553,11 @@ function DashboardScreen({ onNavigate, savedInputs }) {
               <th style={S.th()}>Total Sales (₹)</th>
               <th style={S.th()}>Total Qty</th>
               <th style={{ ...S.th(), ...S.thLeft }}>PO No</th>
-              <th style={S.th()}>Status</th>
+              {/* Change 1: new columns */}
+              <th style={S.th(C.amber)}>Est. Throughput (₹)</th>
+              <th style={S.th(C.sky)}>Act. Throughput (₹)</th>
+              <th style={S.th(C.cyan)}>Op. Profit (₹)</th>
+              {/* Change 1: Status column removed */}
               <th style={S.th()}></th>
             </tr>
           </thead>
@@ -2554,7 +2565,7 @@ function DashboardScreen({ onNavigate, savedInputs }) {
             {loading ? (
               <tr>
                 <td
-                  colSpan={7}
+                  colSpan={9}
                   style={{
                     ...S.td,
                     textAlign: "center",
@@ -2568,7 +2579,7 @@ function DashboardScreen({ onNavigate, savedInputs }) {
             ) : projects.length === 0 ? (
               <tr>
                 <td
-                  colSpan={7}
+                  colSpan={9}
                   style={{
                     ...S.td,
                     textAlign: "center",
@@ -2597,6 +2608,48 @@ function DashboardScreen({ onNavigate, savedInputs }) {
                 const poNos = [
                   ...new Set(proj.details.map((d) => d.pO_NO).filter(Boolean)),
                 ];
+
+                // Change 1: compute est throughput, act throughput, op profit from details
+                const estThroughput = proj.details.reduce((s, d) => {
+                  const salesValue = Number(d.sales_Value ?? 0);
+                  const estMatCost = Number(d.total_Est_Material_Cost ?? 0);
+                  return s + (salesValue - estMatCost);
+                }, 0);
+
+                const actThroughput = proj.details.reduce((s, d) => {
+                  const salesValue = Number(d.sales_Value ?? 0);
+                  const actMatCost = Number(d.total_Act_Material_Cost ?? 0);
+                  return s + (salesValue - actMatCost);
+                }, 0);
+
+                const opProfit = proj.details.reduce((s, d) => {
+                  const inp = savedInputs[proj.id]?.[d.detail_Id] ?? {};
+                  const salesValue = Number(d.sales_Value ?? 0);
+                  const actMatCost = Number(d.total_Act_Material_Cost ?? 0);
+                  const throughput = salesValue - actMatCost;
+                  const commission = Number(
+                    inp.commission ?? d.commission ?? 0,
+                  );
+                  const freight = Number(inp.freight ?? d.freight ?? 0);
+                  const packing = Number(inp.packing ?? d.packing ?? 0);
+                  const ovc = Number(inp.ovc ?? d.ovc ?? 0);
+                  const otherDirect = Number(
+                    inp.other_Direct ?? d.other_Direct ?? 0,
+                  );
+                  const fixedCost = Number(inp.fixed_Cost ?? d.fixed_Cost ?? 0);
+                  const totalOVC =
+                    commission + freight + packing + ovc + otherDirect;
+                  return s + (throughput - totalOVC - fixedCost);
+                }, 0);
+
+                // Change 1: act throughput > est throughput → green, else red
+                const tpColor =
+                  actThroughput >= estThroughput ? C.emerald : C.rose;
+                const tpBg =
+                  actThroughput >= estThroughput
+                    ? "rgba(5,150,105,0.06)"
+                    : "rgba(225,29,72,0.06)";
+
                 return (
                   <tr
                     key={proj.id}
@@ -2669,15 +2722,32 @@ function DashboardScreen({ onNavigate, savedInputs }) {
                         {poNos.length > 1 && <span> +{poNos.length - 1}</span>}
                       </div>
                     </td>
-                    <td style={S.td}>
-                      <span
-                        style={S.badge(
-                          savedInputs[proj.id] ? "green" : "amber",
-                        )}
-                      >
-                        {savedInputs[proj.id] ? "Analysed" : "Pending"}
-                      </span>
+                    {/* Change 1: Est. Throughput */}
+                    <td style={{ ...S.td, fontWeight: 600, color: C.amber }}>
+                      {estThroughput !== 0 ? `₹${fmt(estThroughput)}` : "—"}
                     </td>
+                    {/* Change 1: Act. Throughput — green if >= est, red otherwise */}
+                    <td
+                      style={{
+                        ...S.td,
+                        fontWeight: 700,
+                        color: tpColor,
+                        background: tpBg,
+                      }}
+                    >
+                      {actThroughput !== 0 ? `₹${fmt(actThroughput)}` : "—"}
+                    </td>
+                    {/* Change 1: Op. Profit */}
+                    <td
+                      style={{
+                        ...S.td,
+                        fontWeight: 700,
+                        color: opProfit >= 0 ? C.cyan : C.rose,
+                      }}
+                    >
+                      {opProfit !== 0 ? `₹${fmt(opProfit)}` : "—"}
+                    </td>
+                    {/* Change 1: Status column removed */}
                     <td
                       style={{
                         ...S.td,
