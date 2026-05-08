@@ -53,6 +53,32 @@ function calcActRow(row, pctInputs) {
   };
 }
 
+// ─── DASHBOARD OP PROFIT: project-level percentages, not per-row
+// pctInputs is per-project (same % for all rows in a project)
+// so we sum sales/mat first, then apply % once on the total
+function calcProjectOpProfit(details, pctInputs) {
+  const totalSales = details.reduce(
+    (s, d) => s + Number(d.sales_Value ?? 0),
+    0,
+  );
+  const totalActMat = details.reduce(
+    (s, d) => s + Number(d.total_Act_Material_Cost ?? 0),
+    0,
+  );
+  const totalFoc = details.reduce((s, d) => s + Number(d.mat_Cost_FOC ?? 0), 0);
+  const throughput = totalSales - totalActMat - totalFoc;
+  const p = pctInputs || {};
+  const commission = (totalSales * Number(p.commission ?? 0)) / 100;
+  const freight = (totalSales * Number(p.freight ?? 0)) / 100;
+  const packing = (totalSales * Number(p.packing ?? 0)) / 100;
+  const ovcAmt = (totalSales * Number(p.ovc ?? 0)) / 100;
+  const otherDirect = (totalSales * Number(p.other_Direct ?? 0)) / 100;
+  const fixedCost = (totalSales * Number(p.fixed_Cost ?? 0)) / 100;
+  const totalOVC = commission + freight + packing + ovcAmt + otherDirect;
+  const contribution = throughput - totalOVC;
+  return contribution - fixedCost;
+}
+
 function useMaterialCosts(rows) {
   const [matData, setMatData] = useState({});
   const [loadingMats, setLoadingMats] = useState(false);
@@ -177,6 +203,81 @@ function useMaterialCosts(rows) {
     };
   });
   return { enrichedRows, matData, loadingMats };
+}
+
+// ─── ORDER STATUS BADGE ───────────────────────────────────────────────────────
+const ORDER_STATUS_CONFIG = {
+  AWAITING_SHIPPING: {
+    label: "Awaiting Shipping",
+    color: "#d97706",
+    bg: "rgba(217,119,6,0.10)",
+    border: "rgba(217,119,6,0.25)",
+  },
+  SHIPPED: {
+    label: "Shipped",
+    color: "#0284c7",
+    bg: "rgba(2,132,199,0.10)",
+    border: "rgba(2,132,199,0.25)",
+  },
+  DELIVERED: {
+    label: "Delivered",
+    color: "#059669",
+    bg: "rgba(5,150,105,0.10)",
+    border: "rgba(5,150,105,0.25)",
+  },
+  COMPLETED: {
+    label: "Completed",
+    color: "#059669",
+    bg: "rgba(5,150,105,0.10)",
+    border: "rgba(5,150,105,0.25)",
+  },
+  CANCELLED: {
+    label: "Cancelled",
+    color: "#e11d48",
+    bg: "rgba(225,29,72,0.10)",
+    border: "rgba(225,29,72,0.25)",
+  },
+  IN_PROGRESS: {
+    label: "In Progress",
+    color: "#7c3aed",
+    bg: "rgba(124,58,237,0.10)",
+    border: "rgba(124,58,237,0.25)",
+  },
+  PENDING: {
+    label: "Pending",
+    color: "#64748b",
+    bg: "rgba(100,116,139,0.10)",
+    border: "rgba(100,116,139,0.25)",
+  },
+};
+
+function OrderStatusBadge({ status }) {
+  if (!status) return <span style={{ color: "#64748b", fontSize: 11 }}>—</span>;
+  const cfg = ORDER_STATUS_CONFIG[status] || {
+    label: status.replace(/_/g, " "),
+    color: "#64748b",
+    bg: "rgba(100,116,139,0.10)",
+    border: "rgba(100,116,139,0.25)",
+  };
+  return (
+    <span
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        padding: "2px 8px",
+        borderRadius: 100,
+        fontSize: 10,
+        fontWeight: 700,
+        background: cfg.bg,
+        border: `1px solid ${cfg.border}`,
+        color: cfg.color,
+        whiteSpace: "nowrap",
+        letterSpacing: "0.2px",
+      }}
+    >
+      {cfg.label}
+    </span>
+  );
 }
 
 const C = {
@@ -617,9 +718,6 @@ function DescCell({ text, width = 200 }) {
 }
 
 // ─── MATERIAL COST MODAL ──────────────────────────────────────────────────────
-// Changes:
-// 1. MTO items with missing/null cost sorted to TOP
-// 2. Target Cost input ONLY available for missing-cost items (same rows where Design Est. input shows)
 function MaterialCostModal({ title, items, onClose, isActual, oaNo, fgCode }) {
   const [budgetEdits, setBudgetEdits] = useState({});
   const [targetEdits, setTargetEdits] = useState({});
@@ -638,7 +736,6 @@ function MaterialCostModal({ title, items, onClose, isActual, oaNo, fgCode }) {
     );
   };
 
-  // CHANGE 1: Sort MTO items — missing cost first, then items with cost
   const sortedMtoItems = useMemo(() => {
     return [...mtoItems].sort((a, b) => {
       const aMissing = mtoNeedsBudget(a) ? 0 : 1;
@@ -693,7 +790,6 @@ function MaterialCostModal({ title, items, onClose, isActual, oaNo, fgCode }) {
     setSaving(true);
     setSaveMsg("");
     try {
-      // CHANGE 2: Only save rows with Design Est. input (missing cost items)
       const budgetRows = sortedMtoItems
         .filter(
           (item) =>
@@ -724,45 +820,67 @@ function MaterialCostModal({ title, items, onClose, isActual, oaNo, fgCode }) {
     }
   };
 
-  const TopTabBtn = ({ tabKey, label, summary }) => (
-    <button
-      onClick={() => setActiveTab(tabKey)}
-      style={{
-        padding: "7px 16px",
-        borderRadius: 6,
-        fontSize: 12,
-        fontWeight: 600,
-        cursor: "pointer",
-        border: "none",
-        outline: "none",
-        background:
-          activeTab === tabKey
+  // ─── ONE-LINER TAB BUTTON for top tabs (Detailed / Summary) ───────────────
+  const TopTabBtn = ({ tabKey, label, total, itemCount, needsBudget }) => {
+    const isActive = activeTab === tabKey;
+    return (
+      <button
+        onClick={() => setActiveTab(tabKey)}
+        style={{
+          padding: "7px 16px",
+          borderRadius: 6,
+          fontSize: 12,
+          fontWeight: 600,
+          cursor: "pointer",
+          border: "none",
+          outline: "none",
+          background: isActive
             ? `linear-gradient(135deg,${C.cyan},${C.violet})`
             : "transparent",
-        color: activeTab === tabKey ? "#fff" : C.textMuted,
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "flex-start",
-        gap: 1,
-        transition: "all 0.15s",
-      }}
-    >
-      <span>{label}</span>
-      {summary && (
+          color: isActive ? "#fff" : C.textMuted,
+          display: "flex",
+          alignItems: "center",
+          gap: 8,
+          transition: "all 0.15s",
+          whiteSpace: "nowrap",
+        }}
+      >
+        <span>{label}</span>
         <span
           style={{
-            fontSize: 10,
-            opacity: 0.85,
-            fontWeight: 400,
-            whiteSpace: "nowrap",
+            fontSize: 11,
+            fontWeight: 700,
+            opacity: isActive ? 1 : 0.8,
+            background: isActive
+              ? "rgba(255,255,255,0.20)"
+              : "rgba(0,0,0,0.06)",
+            borderRadius: 5,
+            padding: "1px 7px",
           }}
         >
-          {summary}
+          ₹{fmt(total)}
         </span>
-      )}
-    </button>
-  );
+        {needsBudget > 0 && (
+          <span
+            style={{
+              fontSize: 10,
+              fontWeight: 700,
+              background: isActive
+                ? "rgba(255,255,255,0.25)"
+                : "rgba(225,29,72,0.12)",
+              color: isActive ? "#fff" : C.rose,
+              borderRadius: 5,
+              padding: "1px 6px",
+            }}
+          >
+            {needsBudget} need budget
+          </span>
+        )}
+      </button>
+    );
+  };
 
+  // ─── ONE-LINER DETAIL TAB CARD (MTS / MTO) ───────────────────────────────
   const DetailTabCard = ({
     tabKey,
     label,
@@ -788,69 +906,55 @@ function MaterialCostModal({ title, items, onClose, isActual, oaNo, fgCode }) {
             : C.surface,
         color: detailTab === tabKey ? color : C.textMuted,
         display: "flex",
-        flexDirection: "column",
-        gap: 4,
-        minWidth: 160,
+        alignItems: "center",
+        gap: 8,
+        minWidth: "auto",
         transition: "all 0.15s",
+        whiteSpace: "nowrap",
       }}
     >
-      <div
+      <span>{label}</span>
+      <span style={S.badge(tabKey === "MTS" ? "green" : "violet")}>
+        {count} items
+      </span>
+      <span
         style={{
-          display: "flex",
-          gap: 6,
-          alignItems: "center",
-          flexWrap: "wrap",
+          fontSize: 12,
+          fontWeight: 700,
+          color: detailTab === tabKey ? color : C.textDim,
         }}
       >
-        <span>{label}</span>
-        <span style={S.badge(tabKey === "MTS" ? "green" : "violet")}>
-          {count} items
-        </span>
-        {needsBudget > 0 && (
-          <span style={S.badge("red")}>{needsBudget} need budget</span>
-        )}
-      </div>
-      <span style={{ fontSize: 11, color: C.textMuted, fontWeight: 400 }}>
-        Total: ₹{fmt(total)}
+        ₹{fmt(total)}
       </span>
+      {needsBudget > 0 && (
+        <span style={S.badge("red")}>{needsBudget} need budget</span>
+      )}
     </div>
   );
 
-  // CHANGE 1 + 2: Use sortedMtoItems, Target Cost input only for missing rows
+  // ─── TABLE WITH STICKY HEADER ─────────────────────────────────────────────
   const renderMaterialTable = (tableItems, isMTO) => {
-    const hasMissingItems = isMTO && mtoNeedsBudgetItems.length > 0;
     return (
       <div style={{ overflowX: "auto", padding: "0 16px 12px" }}>
-        {/* {hasMissingItems && (
-          <div
-            style={{
-              margin: "10px 0 8px",
-              padding: "7px 12px",
-              background: "rgba(225,29,72,0.06)",
-              border: `1px solid ${C.redBorder}`,
-              borderRadius: 7,
-              fontSize: 11,
-              color: C.rose,
-              fontWeight: 600,
-              display: "flex",
-              alignItems: "center",
-              gap: 6,
-            }}
-          >
-            <span>⚠️</span>
-            <span>
-              {mtoNeedsBudgetItems.length} item
-              {mtoNeedsBudgetItems.length > 1 ? "s" : ""} with missing cost
-              shown at top — fill in Design Est. Cost &amp; Target Cost to
-              proceed
-            </span>
-          </div>
-        )} */}
-        <table style={{ ...S.table, minWidth: "unset", width: "100%" }}>
+        <table
+          style={{
+            ...S.table,
+            minWidth: "unset",
+            width: "100%",
+            borderCollapse: "separate",
+            borderSpacing: 0,
+          }}
+        >
           <thead>
             <tr>
               <th
-                style={{ ...S.th(), ...S.thLeft, position: "sticky", top: 0 }}
+                style={{
+                  ...S.th(),
+                  ...S.thLeft,
+                  position: "sticky",
+                  top: 0,
+                  zIndex: 3,
+                }}
               >
                 Material
               </th>
@@ -859,6 +963,7 @@ function MaterialCostModal({ title, items, onClose, isActual, oaNo, fgCode }) {
                   ...S.th(C.textMuted),
                   position: "sticky",
                   top: 0,
+                  zIndex: 3,
                   minWidth: 100,
                 }}
               >
@@ -869,18 +974,32 @@ function MaterialCostModal({ title, items, onClose, isActual, oaNo, fgCode }) {
                   ...S.th(isMTO ? C.violet : C.emerald),
                   position: "sticky",
                   top: 0,
+                  zIndex: 3,
                 }}
               >
                 Cost (₹)
               </th>
               {isMTO && (
-                <th style={{ ...S.th(C.amber), position: "sticky", top: 0 }}>
+                <th
+                  style={{
+                    ...S.th(C.amber),
+                    position: "sticky",
+                    top: 0,
+                    zIndex: 3,
+                  }}
+                >
                   Design Est. Cost (₹)
                 </th>
               )}
-              {/* CHANGE 2: Target Cost column only in MTO — and input only for missing rows */}
               {isMTO && (
-                <th style={{ ...S.th(C.sky), position: "sticky", top: 0 }}>
+                <th
+                  style={{
+                    ...S.th(C.sky),
+                    position: "sticky",
+                    top: 0,
+                    zIndex: 3,
+                  }}
+                >
                   Target Cost (₹)
                 </th>
               )}
@@ -897,7 +1016,7 @@ function MaterialCostModal({ title, items, onClose, isActual, oaNo, fgCode }) {
                   : false
                 : false;
               const showDivider = isMTO && li > 0 && prevMissing && !missing;
-              const colCount = isMTO ? 5 : 4;
+              const colCount = isMTO ? 5 : 3;
               return (
                 <>
                   {showDivider && (
@@ -1014,7 +1133,6 @@ function MaterialCostModal({ title, items, onClose, isActual, oaNo, fgCode }) {
                         )}
                       </td>
                     )}
-                    {/* CHANGE 2: Target Cost input ONLY for missing rows; read-only dash for others */}
                     {isMTO && (
                       <td style={S.td}>
                         {missing ? (
@@ -1082,13 +1200,51 @@ function MaterialCostModal({ title, items, onClose, isActual, oaNo, fgCode }) {
 
   const renderEstimatedTable = () => (
     <div style={{ padding: "14px 16px" }}>
-      <table style={{ ...S.table, minWidth: "unset" }}>
+      <table
+        style={{
+          ...S.table,
+          minWidth: "unset",
+          borderCollapse: "separate",
+          borderSpacing: 0,
+        }}
+      >
         <thead>
           <tr>
-            <th style={{ ...S.th(), ...S.thLeft }}>Material</th>
-            <th style={{ ...S.th(C.textMuted) }}>Category</th>
-            <th style={S.th()}>Cost (₹)</th>
-            <th style={{ ...S.th(), textAlign: "center" }}>Status</th>
+            <th
+              style={{
+                ...S.th(),
+                ...S.thLeft,
+                position: "sticky",
+                top: 0,
+                zIndex: 3,
+              }}
+            >
+              Material
+            </th>
+            <th
+              style={{
+                ...S.th(C.textMuted),
+                position: "sticky",
+                top: 0,
+                zIndex: 3,
+              }}
+            >
+              Category
+            </th>
+            <th style={{ ...S.th(), position: "sticky", top: 0, zIndex: 3 }}>
+              Cost (₹)
+            </th>
+            <th
+              style={{
+                ...S.th(),
+                textAlign: "center",
+                position: "sticky",
+                top: 0,
+                zIndex: 3,
+              }}
+            >
+              Status
+            </th>
           </tr>
         </thead>
         <tbody>
@@ -1185,15 +1341,71 @@ function MaterialCostModal({ title, items, onClose, isActual, oaNo, fgCode }) {
     const grandCount = categories.reduce((s, [, d]) => s + d.count, 0);
     return (
       <div style={{ padding: "14px 16px", overflowX: "auto" }}>
-        <table style={{ ...S.table, minWidth: "unset", width: "100%" }}>
+        <table
+          style={{
+            ...S.table,
+            minWidth: "unset",
+            width: "100%",
+            borderCollapse: "separate",
+            borderSpacing: 0,
+          }}
+        >
           <thead>
             <tr>
-              <th style={{ ...S.th(), ...S.thLeft }}>Category</th>
-              <th style={S.th()}>Items</th>
-              <th style={S.th(C.violet)}>Actual Cost (₹)</th>
-              <th style={S.th(C.amber)}>Design Est. Cost (₹)</th>
-              <th style={S.th(C.sky)}>Target Cost (₹)</th>
-              <th style={S.th(C.rose)}>Needs Budget</th>
+              <th
+                style={{
+                  ...S.th(),
+                  ...S.thLeft,
+                  position: "sticky",
+                  top: 0,
+                  zIndex: 3,
+                }}
+              >
+                Category
+              </th>
+              <th style={{ ...S.th(), position: "sticky", top: 0, zIndex: 3 }}>
+                Items
+              </th>
+              <th
+                style={{
+                  ...S.th(C.violet),
+                  position: "sticky",
+                  top: 0,
+                  zIndex: 3,
+                }}
+              >
+                Actual Cost (₹)
+              </th>
+              <th
+                style={{
+                  ...S.th(C.amber),
+                  position: "sticky",
+                  top: 0,
+                  zIndex: 3,
+                }}
+              >
+                Design Est. Cost (₹)
+              </th>
+              <th
+                style={{
+                  ...S.th(C.sky),
+                  position: "sticky",
+                  top: 0,
+                  zIndex: 3,
+                }}
+              >
+                Target Cost (₹)
+              </th>
+              <th
+                style={{
+                  ...S.th(C.rose),
+                  position: "sticky",
+                  top: 0,
+                  zIndex: 3,
+                }}
+              >
+                Needs Budget
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -1265,10 +1477,6 @@ function MaterialCostModal({ title, items, onClose, isActual, oaNo, fgCode }) {
           ),
         0,
       );
-  const detailedSummaryLabel = isActual
-    ? `MTS ₹${fmt(mtsTotal)} · MTO ₹${fmt(mtoTotal)}${mtoNeedsBudgetItems.length ? ` · ${mtoNeedsBudgetItems.length} need budget` : ""}`
-    : `${items.length} items · ₹${fmt(grandTotal)}`;
-  const summaryTabLabel = `₹${fmt(grandTotal)} · ${items.length} items`;
 
   return (
     <div style={S.overlay} onClick={onClose}>
@@ -1286,38 +1494,46 @@ function MaterialCostModal({ title, items, onClose, isActual, oaNo, fgCode }) {
             ×
           </button>
         </div>
+
+        {/* ── TOP TABS: one-liner with amount ── */}
         <div
           style={{
             display: "flex",
             gap: 3,
-            padding: "8px 16px 0",
+            padding: "7px 16px 6px",
             background: C.surface,
             borderBottom: `1px solid ${C.border}`,
             flexShrink: 0,
+            alignItems: "center",
           }}
         >
           <TopTabBtn
             tabKey="detailed"
             label="📋 Detailed"
-            summary={detailedSummaryLabel}
+            total={grandTotal}
+            needsBudget={isActual ? mtoNeedsBudgetItems.length : 0}
           />
           <TopTabBtn
             tabKey="summary"
             label="📊 Summary"
-            summary={summaryTabLabel}
+            total={grandTotal}
+            itemCount={items.length}
           />
         </div>
+
         <div style={S.modalBody}>
           {activeTab === "summary" && renderSummary()}
           {activeTab === "detailed" && !isActual && renderEstimatedTable()}
           {activeTab === "detailed" && isActual && (
             <div>
+              {/* ── DETAIL TABS: one-liner MTS / MTO ── */}
               <div
                 style={{
                   display: "flex",
                   gap: 8,
-                  padding: "12px 16px 8px",
+                  padding: "10px 16px 8px",
                   flexShrink: 0,
+                  alignItems: "center",
                 }}
               >
                 <DetailTabCard
@@ -1341,6 +1557,7 @@ function MaterialCostModal({ title, items, onClose, isActual, oaNo, fgCode }) {
             </div>
           )}
         </div>
+
         {isActual && (
           <div style={S.modalFooter}>
             <button
@@ -1374,8 +1591,7 @@ function MaterialCostModal({ title, items, onClose, isActual, oaNo, fgCode }) {
   );
 }
 
-// ─── PERCENTAGE INPUT PANEL — REDESIGNED ─────────────────────────────────────
-// Compact pill-style locked view; clean grid edit view
+// ─── PERCENTAGE INPUT PANEL ───────────────────────────────────────────────────
 const PCT_FIELDS = [
   { key: "commission", label: "Commission", icon: "💼" },
   { key: "freight", label: "Freight", icon: "🚚" },
@@ -1403,7 +1619,6 @@ function PctPanel({ pctInputs, onChangePct, locked, onUnlock }) {
           boxShadow: "0 1px 2px rgba(0,0,0,0.04)",
         }}
       >
-        {/* Left label strip */}
         <div
           style={{
             padding: "0 12px",
@@ -1431,7 +1646,6 @@ function PctPanel({ pctInputs, onChangePct, locked, onUnlock }) {
             % of Sales
           </span>
         </div>
-        {/* Fields row */}
         <div
           style={{
             display: "flex",
@@ -1496,7 +1710,6 @@ function PctPanel({ pctInputs, onChangePct, locked, onUnlock }) {
             );
           })}
         </div>
-        {/* Edit button */}
         <div
           style={{
             padding: "6px 10px",
@@ -1530,7 +1743,6 @@ function PctPanel({ pctInputs, onChangePct, locked, onUnlock }) {
         boxShadow: "0 1px 2px rgba(0,0,0,0.04)",
       }}
     >
-      {/* Header bar */}
       <div
         style={{
           padding: "7px 14px",
@@ -1557,7 +1769,6 @@ function PctPanel({ pctInputs, onChangePct, locked, onUnlock }) {
           Enter percentages below
         </span>
       </div>
-      {/* Input grid */}
       <div
         style={{
           display: "flex",
@@ -2522,6 +2733,7 @@ function CreateScreen({ onNavigate, savedInputs, onSaveInputs, initialPid }) {
       ),
     [pendingProjects, projectSearch],
   );
+
   const handleChangePct = useCallback((key, val) => {
     setPctInputsState((prev) => ({ ...prev, [key]: val }));
     setPctLocked(false);
@@ -2930,6 +3142,8 @@ function DashboardScreen({ onNavigate, savedInputs }) {
               <th style={S.th()}>Total Sales (₹)</th>
               <th style={S.th()}>Total Qty</th>
               <th style={{ ...S.th(), ...S.thLeft }}>PO No</th>
+              {/* NEW: Order Status column */}
+              <th style={{ ...S.th(), ...S.thLeft }}>Order Status</th>
               <th style={S.th(C.amber)}>Est. Throughput (₹)</th>
               <th style={S.th(C.sky)}>Act. Throughput (₹)</th>
               <th style={S.th(C.cyan)}>Op. Profit (₹)</th>
@@ -2940,7 +3154,7 @@ function DashboardScreen({ onNavigate, savedInputs }) {
             {loading ? (
               <tr>
                 <td
-                  colSpan={9}
+                  colSpan={10}
                   style={{
                     ...S.td,
                     textAlign: "center",
@@ -2954,7 +3168,7 @@ function DashboardScreen({ onNavigate, savedInputs }) {
             ) : projects.length === 0 ? (
               <tr>
                 <td
-                  colSpan={9}
+                  colSpan={10}
                   style={{
                     ...S.td,
                     textAlign: "center",
@@ -2983,6 +3197,14 @@ function DashboardScreen({ onNavigate, savedInputs }) {
                 const poNos = [
                   ...new Set(proj.details.map((d) => d.pO_NO).filter(Boolean)),
                 ];
+
+                // Collect unique order statuses across details
+                const orderStatuses = [
+                  ...new Set(
+                    proj.details.map((d) => d.ordeR_STATUS).filter(Boolean),
+                  ),
+                ];
+
                 const estThroughput = proj.details.reduce((s, d) => {
                   const sv = Number(d.sales_Value ?? 0);
                   const em = Number(d.total_Est_Material_Cost ?? 0);
@@ -2993,28 +3215,31 @@ function DashboardScreen({ onNavigate, savedInputs }) {
                   const am = Number(d.total_Act_Material_Cost ?? 0);
                   return s + (sv - am);
                 }, 0);
+
+                // ─── FIXED: Op Profit calc — apply % once on project total, not per row ───
                 const p = savedInputs[proj.id]?.pct || {};
-                const opProfit = proj.details.reduce((s, d) => {
-                  const sv = Number(d.sales_Value ?? 0);
-                  const am = Number(d.total_Act_Material_Cost ?? 0);
-                  const tp = sv - am;
-                  const comm =
-                    (sv * Number(p.commission ?? d.commission ?? 0)) / 100;
-                  const fr = (sv * Number(p.freight ?? d.freight ?? 0)) / 100;
-                  const pk = (sv * Number(p.packing ?? d.packing ?? 0)) / 100;
-                  const ov = (sv * Number(p.ovc ?? d.ovc ?? 0)) / 100;
-                  const od =
-                    (sv * Number(p.other_Direct ?? d.other_Direct ?? 0)) / 100;
-                  const fc =
-                    (sv * Number(p.fixed_Cost ?? d.fixed_Cost ?? 0)) / 100;
-                  return s + (tp - comm - fr - pk - ov - od - fc);
-                }, 0);
+                // Fall back to first detail row's stored percentages if no savedInputs
+                const firstDetail = proj.details[0] || {};
+                const effectivePct = {
+                  commission: p.commission ?? firstDetail.commission ?? 0,
+                  freight: p.freight ?? firstDetail.freight ?? 0,
+                  packing: p.packing ?? firstDetail.packing ?? 0,
+                  ovc: p.ovc ?? firstDetail.ovc ?? 0,
+                  other_Direct: p.other_Direct ?? firstDetail.other_Direct ?? 0,
+                  fixed_Cost: p.fixed_Cost ?? firstDetail.fixed_Cost ?? 0,
+                };
+                const opProfit = calcProjectOpProfit(
+                  proj.details,
+                  effectivePct,
+                );
+
                 const tpColor =
                   actThroughput >= estThroughput ? C.emerald : C.rose;
                 const tpBg =
                   actThroughput >= estThroughput
                     ? "rgba(5,150,105,0.06)"
                     : "rgba(225,29,72,0.06)";
+
                 return (
                   <tr
                     key={proj.id}
@@ -3086,6 +3311,22 @@ function DashboardScreen({ onNavigate, savedInputs }) {
                         {poNos.length > 0 ? poNos[0] : "—"}
                         {poNos.length > 1 && <span> +{poNos.length - 1}</span>}
                       </div>
+                    </td>
+                    {/* NEW: Order Status cell — show badge(es) */}
+                    <td style={{ ...S.td, ...S.tdLeft }}>
+                      {orderStatuses.length === 0 ? (
+                        <span style={{ color: C.textMuted, fontSize: 11 }}>
+                          —
+                        </span>
+                      ) : (
+                        <div
+                          style={{ display: "flex", flexWrap: "wrap", gap: 4 }}
+                        >
+                          {orderStatuses.map((st) => (
+                            <OrderStatusBadge key={st} status={st} />
+                          ))}
+                        </div>
+                      )}
                     </td>
                     <td style={{ ...S.td, fontWeight: 600, color: C.amber }}>
                       {estThroughput !== 0 ? `₹${fmt(estThroughput)}` : "—"}
