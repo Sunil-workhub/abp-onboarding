@@ -19,6 +19,10 @@ const API = {
     UpdateBudgetedCosts: "/ILeap/UpdateBudgetedCosts",
   },
 
+  Helpdesk: {
+    GetHDCatalog: "/ILeap/GetHDCatalog",
+  },
+
   // common
   FileDownload: {
     DownloadFile: "/ILeap/DownloadFile",

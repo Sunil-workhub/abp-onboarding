@@ -86,6 +86,7 @@ const initials = (name) =>
     .toUpperCase();
 
 const USERS = [
+  // ── IT ──
   {
     id: "it_madhav",
     empId: "8165",
@@ -131,69 +132,116 @@ const USERS = [
     avatar: initials("Pranay Mahadik"),
     org: "IML",
   },
+  // ── HR — updated from API ──
   {
-    id: "hr_rajesh",
-    empId: "9086",
-    name: "Rajesh Virkud",
+    id: "hr_satish",
+    empId: "9152",
+    name: "Satish Dukare",
     role: "HR",
     dept: "HR Department",
-    avatar: initials("Rajesh Virkud"),
+    avatar: initials("Satish Dukare"),
     org: "IML",
   },
   {
-    id: "hr_nilesh",
-    empId: "9102",
-    name: "Nilesh Sarangdhar",
+    id: "hr_vishvajeet",
+    empId: "7013",
+    name: "Vishvajeet Mhatre",
     role: "HR",
     dept: "HR Department",
-    avatar: initials("Nilesh Sarangdhar"),
+    avatar: initials("Vishvajeet Mhatre"),
     org: "IML",
   },
   {
-    id: "hr_ravindra",
-    empId: "7007",
-    name: "Ravindra Kudpane",
+    id: "hr_shankar",
+    empId: "7024",
+    name: "Shankar Bandekar",
     role: "HR",
     dept: "HR Department",
-    avatar: initials("Ravindra Kudpane"),
+    avatar: initials("Shankar Bandekar"),
     org: "IML",
   },
   {
-    id: "hr_santosh",
-    empId: "7026",
-    name: "Santosh Hadap",
+    id: "hr_kiran",
+    empId: "7042",
+    name: "Kiran Bailmare",
     role: "HR",
     dept: "HR Department",
-    avatar: initials("Santosh Hadap"),
+    avatar: initials("Kiran Bailmare"),
     org: "IML",
   },
   {
-    id: "hr_vinod",
-    empId: "7036",
-    name: "Vinod More",
+    id: "hr_pravin_b",
+    empId: "7043",
+    name: "Pravin Bhabal",
     role: "HR",
     dept: "HR Department",
-    avatar: initials("Vinod More"),
+    avatar: initials("Pravin Bhabal"),
     org: "IML",
   },
   {
-    id: "hr_pritam",
-    empId: "7039",
-    name: "Pritam Gawade",
+    id: "hr_sadanand",
+    empId: "9212",
+    name: "Sadanand Tamboli",
     role: "HR",
     dept: "HR Department",
-    avatar: initials("Pritam Gawade"),
+    avatar: initials("Sadanand Tamboli"),
     org: "IML",
   },
   {
-    id: "hr_ratnesh",
-    empId: "7056",
-    name: "Ratnesh Gaikwad",
+    id: "hr_pravin_p",
+    empId: "9217",
+    name: "Pravin Patil",
     role: "HR",
     dept: "HR Department",
-    avatar: initials("Ratnesh Gaikwad"),
+    avatar: initials("Pravin Patil"),
     org: "IML",
   },
+  {
+    id: "hr_shubhda",
+    empId: "9221",
+    name: "Shubhda Shrivastava",
+    role: "HR",
+    dept: "HR Department",
+    avatar: initials("Shubhda Shrivastava"),
+    org: "IML",
+  },
+  {
+    id: "hr_sanket",
+    empId: "9222",
+    name: "Sanket Patil",
+    role: "HR",
+    dept: "HR Department",
+    avatar: initials("Sanket Patil"),
+    org: "IML",
+  },
+  {
+    id: "hr_anjali",
+    empId: "9224",
+    name: "Anjali Verma",
+    role: "HR",
+    dept: "HR Department",
+    avatar: initials("Anjali Verma"),
+    org: "IML",
+  },
+  {
+    id: "hr_priyanka",
+    empId: "9225",
+    name: "Priyanka Hange",
+    role: "HR",
+    dept: "HR Department",
+    avatar: initials("Priyanka Hange"),
+    org: "IML",
+  },
+  {
+    id: "hr_abhay",
+    empId: "9229",
+    name: "Abhay Mishra",
+    role: "HR",
+    dept: "HR Department",
+    avatar: initials("Abhay Mishra"),
+    org: "IML",
+  },
+  // ── End Users ──
   {
     id: "user_ananya",
     empId: "9011",
@@ -278,18 +326,26 @@ const USERS = [
 ];
 
 const USER_CREDENTIALS = {
+  // IT
   8165: { password: "Madhav@IT165", userId: "it_madhav" },
   8033: { password: "Harish@IT033", userId: "it_harish" },
   8213: { password: "Baba@IT213", userId: "it_babasaheb" },
   6001: { password: "Sec@IT001", userId: "it_security" },
   8295: { password: "Pranay@IT295", userId: "it_pranay" },
-  9086: { password: "Rajesh@HR086", userId: "hr_rajesh" },
-  9102: { password: "Nilesh@HR102", userId: "hr_nilesh" },
-  7007: { password: "Ravi@HR007", userId: "hr_ravindra" },
-  7026: { password: "Santosh@HR026", userId: "hr_santosh" },
-  7036: { password: "Vinod@HR036", userId: "hr_vinod" },
-  7039: { password: "Pritam@HR039", userId: "hr_pritam" },
-  7056: { password: "Ratnesh@HR056", userId: "hr_ratnesh" },
+  // HR — updated
+  9152: { password: "Satish@9152", userId: "hr_satish" },
+  7013: { password: "Vishva@7013", userId: "hr_vishvajeet" },
+  7024: { password: "Shankar@7024", userId: "hr_shankar" },
+  7042: { password: "Kiran@7042", userId: "hr_kiran" },
+  7043: { password: "Pravin@7043", userId: "hr_pravin_b" },
+  9212: { password: "Sadan@9212", userId: "hr_sadanand" },
+  9217: { password: "Pravin@9217", userId: "hr_pravin_p" },
+  9221: { password: "Shubhda@9221", userId: "hr_shubhda" },
+  9222: { password: "Sanket@9222", userId: "hr_sanket" },
+  9224: { password: "Anjali@9224", userId: "hr_anjali" },
+  9225: { password: "Priya@9225", userId: "hr_priyanka" },
+  9229: { password: "Abhay@9229", userId: "hr_abhay" },
+  // Users
   9011: { password: "Ananya@123", userId: "user_ananya" },
   9043: { password: "Suresh@456", userId: "user_suresh" },
   9076: { password: "Meera@789", userId: "user_meera" },
@@ -1019,7 +1075,7 @@ const INITIAL_TICKETS = [
     parentId: null,
     linkedTaskIds: [],
     enrolledByIT: true,
-    itAssignees: ["Rajesh Virkud"],
+    itAssignees: ["Satish Dukare"],
     itRemarks: "Collecting documents.",
     org: "IML",
     statusHistory: [
@@ -1033,7 +1089,7 @@ const INITIAL_TICKETS = [
       {
         status: "Assigned",
         date: "2026-04-07",
-        note: "Assigned to Rajesh.",
+        note: "Assigned to Satish.",
         remarks: "",
       },
       {
@@ -1046,7 +1102,7 @@ const INITIAL_TICKETS = [
     messages: [
       {
         id: 801,
-        userId: "hr_rajesh",
+        userId: "hr_satish",
         text: "Collecting joining docs from managers.",
         ts: "2026-04-07T10:00:00",
       },
@@ -1176,21 +1232,20 @@ function LoginScreen({ onLogin }) {
         width: "100vw",
         overflow: "hidden",
         fontFamily: "'Inter','Segoe UI',system-ui,sans-serif",
-        position: "relative", // Keeps the background constrained to this container
+        position: "relative",
       }}
     >
-      {/* 1. Blurred Background Layer */}
       <div
         style={{
           position: "absolute",
-          inset: 0, // Shorthand for top: 0, bottom: 0, left: 0, right: 0
-          zIndex: -1, // Puts it behind your content
+          inset: 0,
+          zIndex: -1,
           background:
             "linear-gradient(135deg,#0f1720 0%,#1a2a38 50%,#0f1720 100%)",
           backgroundImage: `url(${BgImage1})`,
           backgroundSize: "cover",
           backgroundPosition: "center",
-          filter: "blur(10px)", // Only blurs this background div
+          filter: "blur(10px)",
         }}
       />
       <style>{`
@@ -1435,7 +1490,6 @@ function LoginScreen({ onLogin }) {
               />
             </div>
           </div>
-
           <h1
             style={{
               margin: "0 0 4px",
@@ -1523,7 +1577,6 @@ function LoginScreen({ onLogin }) {
                 />
               </div>
             </div>
-
             <div>
               <label
                 style={{
@@ -1588,7 +1641,6 @@ function LoginScreen({ onLogin }) {
                 </button>
               </div>
             </div>
-
             <div
               style={{
                 display: "flex",
@@ -1600,7 +1652,6 @@ function LoginScreen({ onLogin }) {
               <div style={{ flex: 1, height: 1, background: BORDER }} />
               <div style={{ flex: 1, height: 1, background: BORDER }} />
             </div>
-
             <button
               className="login-btn-main"
               onClick={handleLogin}
@@ -1766,7 +1817,7 @@ function UserDashboard({
             { l: "Total", v: stats.total, t: "slate" },
             { l: "Open", v: stats.open, t: "slate" },
             { l: "In Progress", v: stats.inProgress, t: "blue" },
-            { l: "Waiting", v: stats.waiting, t: "orange" },
+            { l: "Waiting for Input", v: stats.waiting, t: "orange" },
             { l: "Closed", v: stats.closed, t: "slate" },
           ].map((s) => (
             <div
@@ -1803,6 +1854,12 @@ function UserDashboard({
                     <div className="flex items-start gap-4">
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap mb-1">
+                          {/* CHANGE 2: org pill first */}
+                          <span
+                            className={`text-[11px] font-bold px-2 py-0.5 rounded-full border ${ORG_PILL[t.org]}`}
+                          >
+                            {t.org}
+                          </span>
                           {isHRTicket ? (
                             <HRPill />
                           ) : (
@@ -1816,11 +1873,6 @@ function UserDashboard({
                             className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${sm.chip}`}
                           >
                             {t.status}
-                          </span>
-                          <span
-                            className={`text-[11px] font-bold px-1.5 py-0.5 rounded-full ${ORG_PILL[t.org]}`}
-                          >
-                            {t.org}
                           </span>
                           {t.priority && (
                             <span
@@ -1917,7 +1969,13 @@ function TicketCard({ ticket, active, onClick, currentUser }) {
       onClick={onClick}
       className={`w-full rounded-xl border bg-white p-2.5 text-left shadow-sm transition-all duration-150 ${active ? "border-slate-800 ring-2 ring-slate-200 shadow-md" : "border-slate-200 hover:border-slate-300 hover:shadow"}`}
     >
+      {/* CHANGE 2: org pill is now first/leftmost */}
       <div className="flex items-center gap-1 mb-1.5 flex-wrap">
+        <span
+          className={`inline-flex items-center text-[10px] font-bold px-1.5 py-0.5 rounded-full border flex-none ${ORG_PILL[ticket.org]}`}
+        >
+          {ticket.org}
+        </span>
         {isHRTicket ? (
           <HRPill small />
         ) : cat ? (
@@ -1928,11 +1986,6 @@ function TicketCard({ ticket, active, onClick, currentUser }) {
             {cat.label}
           </span>
         ) : null}
-        <span
-          className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full flex-none ${ORG_PILL[ticket.org]}`}
-        >
-          {ticket.org}
-        </span>
         {ticket.ticketType && (
           <span
             className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full flex-none ${ticket.ticketType === "Incident" ? "bg-red-100 text-red-700 border border-red-200" : "bg-sky-100 text-sky-700 border border-sky-200"}`}
@@ -2181,12 +2234,17 @@ export default function App() {
       errs.etaDate = "ETA must be after start date.";
     setEnrollErrors(errs);
     if (Object.keys(errs).length) return;
-    let ns =
-      sel.ticketDept === "HR"
-        ? "Queue"
-        : getCatMeta(sel.category).flowType === "full"
-          ? "Requirement"
-          : "In Progress";
+
+    // CHANGE 3: After enroll, status goes to "Assigned" for IT (all categories) and HR.
+    // This ensures the ticket appears in the correct "Assigned to Me" or "Queue" column.
+    let ns;
+    if (sel.ticketDept === "HR") {
+      ns = "Assigned";
+    } else {
+      // For IT — all categories now go to "Assigned" first so it appears in "Assigned to Me"
+      ns = "Assigned";
+    }
+
     patch(sel.id, {
       enrolledByIT: true,
       itAssignees: enrollForm.itAssignees,
@@ -2247,7 +2305,6 @@ export default function App() {
     setSelectedId(null);
   };
 
-  // ── Waiting for User Input: no dropdown required ──────────────────────────
   const submitWaitingForUserInput = () => {
     setHoldError("");
     patch(sel.id, {
@@ -2422,6 +2479,7 @@ export default function App() {
     });
     setReassignModal(false);
   };
+
   const submitEditType = (nt) => {
     patch(sel.id, {
       ticketType: nt,
@@ -2437,6 +2495,7 @@ export default function App() {
     });
     setEditTypeModal(false);
   };
+
   const submitEditPriority = (np) => {
     patch(sel.id, {
       priority: np,
@@ -2491,7 +2550,7 @@ export default function App() {
       : null;
     let autoPriority = null;
     if (PERSONAL_IMPACT_VALUES.includes(createForm.impact)) {
-      autoPriority = createForm.dept === "HR" ? "Normal" : "Normal";
+      autoPriority = "Normal";
     }
     const t = {
       id: nid,
@@ -2660,11 +2719,21 @@ export default function App() {
     );
   }
 
-  // ── Build IT Kanban columns ───────────────────────────────────────────────
+  // ── CHANGE 3: Build IT Kanban columns ─────────────────────────────────────
+  // Logic:
+  // - Open (unassigned): not enrolled, status === "Open"
+  // - Queue: enrolled, assigned to someone else (not me), not closed, not testing, not hold/waiting
+  // - Assigned to Me: enrolled, assigned to me, status === "Assigned" (any category)
+  // - In Progress (Mine): enrolled, assigned to me, status === "In Progress"
+  // - Testing: enrolled, any testing status
+  // - Waiting for User Input / On Hold: full-flow categories only
+  // - Closed
   const buildITColumns = () => {
     const openUnassigned = visibleTickets.filter(
       (t) => !t.enrolledByIT && t.status === "Open",
     );
+
+    // Queue: enrolled but NOT assigned to me (or assigned to others), active non-special statuses
     const queueAll = visibleTickets.filter(
       (t) =>
         t.enrolledByIT &&
@@ -2672,43 +2741,54 @@ export default function App() {
         !TESTING_STATUSES.includes(t.status) &&
         t.status !== "On Hold" &&
         t.status !== "Waiting for User Input" &&
+        t.status !== "In Progress" &&
+        t.status !== "Assigned" &&
         !t.itAssignees?.includes(currentUser.name),
     );
+
+    // Also add enrolled tickets assigned to others that are Assigned or In Progress status
+    const queueOthers = visibleTickets.filter(
+      (t) =>
+        t.enrolledByIT &&
+        (t.status === "Assigned" || t.status === "In Progress") &&
+        !t.itAssignees?.includes(currentUser.name) &&
+        t.status !== "Closed" &&
+        !TESTING_STATUSES.includes(t.status),
+    );
+
+    const combinedQueue = [...queueAll, ...queueOthers];
+
+    // Assigned to Me: enrolled, I am assignee, status === "Assigned"
     const assignedToMe = visibleTickets.filter(
       (t) =>
         t.enrolledByIT &&
-        t.status !== "Closed" &&
-        !TESTING_STATUSES.includes(t.status) &&
-        t.status !== "On Hold" &&
-        t.status !== "Waiting for User Input" &&
-        t.itAssignees?.includes(currentUser.name) &&
-        (t.status === "Discussion" || t.status === "Requirement"),
+        t.status === "Assigned" &&
+        t.itAssignees?.includes(currentUser.name),
     );
+
+    // In Progress (Mine): enrolled, I am assignee, status === "In Progress"
     const inProgressMine = visibleTickets.filter(
       (t) =>
         t.enrolledByIT &&
-        t.status !== "Closed" &&
-        !TESTING_STATUSES.includes(t.status) &&
-        t.status !== "On Hold" &&
-        t.status !== "Waiting for User Input" &&
-        t.itAssignees?.includes(currentUser.name) &&
-        t.status !== "Discussion" &&
-        t.status !== "Requirement",
+        t.status === "In Progress" &&
+        t.itAssignees?.includes(currentUser.name),
     );
+
     const testingCol = visibleTickets.filter(
       (t) => t.enrolledByIT && TESTING_STATUSES.includes(t.status),
     );
-    // ── Waiting for User Input: only software + erp categories ──
+
     const waitingCol = visibleTickets.filter(
       (t) =>
         t.status === "Waiting for User Input" &&
         FULL_FLOW_CATEGORIES.includes(t.category),
     );
-    // ── On Hold: only software + erp categories ──
+
     const onHoldCol = visibleTickets.filter(
       (t) =>
         t.status === "On Hold" && FULL_FLOW_CATEGORIES.includes(t.category),
     );
+
     const closedCol = visibleTickets.filter((t) => t.status === "Closed");
 
     const cols = [
@@ -2729,16 +2809,16 @@ export default function App() {
           chip: "bg-slate-100 text-slate-600",
           Icon: List,
         },
-        items: queueAll,
+        items: combinedQueue,
         subtitle: "All assigned tickets",
         accent: "slate",
       },
       {
         key: "assigned_me",
         label: "Assigned to Me",
-        meta: STATUS_META["Discussion"],
+        meta: STATUS_META["Assigned"],
         items: assignedToMe,
-        subtitle: "Discussion / Requirement",
+        subtitle: "Enrolled & assigned to you",
         accent: "purple",
       },
       {
@@ -2762,12 +2842,11 @@ export default function App() {
         subtitle: "IT / User testing",
         accent: "indigo",
       },
-      // ── Waiting column: only shown when tickets exist ──
       ...(waitingCol.length > 0
         ? [
             {
               key: "waiting",
-              label: "Waiting",
+              label: "Waiting for User Input",
               meta: STATUS_META["Waiting for User Input"],
               items: waitingCol,
               subtitle: "Awaiting user response",
@@ -2775,7 +2854,6 @@ export default function App() {
             },
           ]
         : []),
-      // ── On Hold column: only shown when tickets exist ──
       ...(onHoldCol.length > 0
         ? [
             {
@@ -2800,22 +2878,40 @@ export default function App() {
     return cols;
   };
 
-  // ── Build HR Kanban columns (no waiting/hold columns) ────────────────────
+  // ── CHANGE 3: Build HR Kanban columns ────────────────────────────────────
+  // Logic:
+  // - Open: not enrolled, status === "Open"
+  // - Queue: enrolled, status === "Queue"
+  // - Assigned to Me: enrolled, I am assignee, status === "Assigned"
+  // - In Progress (Mine): enrolled, I am assignee, status === "In Progress"
+  // - Closed
   const buildHRColumns = () => {
     const hrOpenUnassigned = visibleTickets.filter(
       (t) => !t.enrolledByIT && t.status === "Open",
     );
+
     const hrQueue = visibleTickets.filter(
       (t) => t.enrolledByIT && t.status === "Queue",
     );
-    const hrAssigned = visibleTickets.filter(
-      (t) => t.enrolledByIT && t.status === "Assigned",
-    );
-    const hrInProgress = visibleTickets.filter(
+
+    // Assigned to Me: enrolled, I am assignee, status === "Assigned"
+    const hrAssignedToMe = visibleTickets.filter(
       (t) =>
-        t.itAssignees?.includes(currentUser.name) && t.status === "In Progress",
+        t.enrolledByIT &&
+        t.status === "Assigned" &&
+        t.itAssignees?.includes(currentUser.name),
     );
+
+    // In Progress (Mine): enrolled, I am assignee, status === "In Progress"
+    const hrInProgressMine = visibleTickets.filter(
+      (t) =>
+        t.enrolledByIT &&
+        t.status === "In Progress" &&
+        t.itAssignees?.includes(currentUser.name),
+    );
+
     const hrClosed = visibleTickets.filter((t) => t.status === "Closed");
+
     return [
       {
         key: "hr_open",
@@ -2834,18 +2930,18 @@ export default function App() {
         accent: "slate",
       },
       {
-        key: "hr_assigned",
-        label: "Assigned",
+        key: "hr_assigned_me",
+        label: "Assigned to Me",
         meta: STATUS_META["Assigned"],
-        items: hrAssigned,
-        subtitle: "HR assigned",
-        accent: "indigo",
+        items: hrAssignedToMe,
+        subtitle: "Enrolled & assigned to you",
+        accent: "purple",
       },
       {
-        key: "hr_inprogress",
+        key: "hr_inprogress_me",
         label: "In Progress",
         meta: STATUS_META["In Progress"],
-        items: hrInProgress,
+        items: hrInProgressMine,
         subtitle: "My active work",
         accent: "indigo",
       },
@@ -2953,17 +3049,7 @@ export default function App() {
                     <p className="text-xs font-bold text-slate-800 leading-none">
                       {currentUser.name}
                     </p>
-                    {/* <p
-                      className={`text-[10px] font-semibold ${isHR ? "text-indigo-600" : "text-blue-600"}`}
-                    >
-                      {deptLabel}
-                    </p> */}
                   </div>
-                  {/* <span
-                    className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${ORG_PILL[currentUser.org]}`}
-                  >
-                    {currentUser.org}
-                  </span> */}
                 </div>
                 <button
                   onClick={() => openCreateModal(isHR ? "HR" : "IT")}
@@ -2991,11 +3077,15 @@ export default function App() {
                   { l: "Total", v: stats.total, t: "slate" },
                   { l: "Open", v: stats.open, t: "slate" },
                   { l: "Progress", v: stats.inProgress, t: "blue" },
-                  // On Hold and Waiting stats only shown for IT
                   ...(isIT
                     ? [
                         { l: "On Hold", v: stats.onHold, t: "amber" },
-                        { l: "Waiting", v: stats.waiting, t: "orange" },
+                        // CHANGE 5: "Waiting" → "Waiting for User Input"
+                        {
+                          l: "Waiting for User Input",
+                          v: stats.waiting,
+                          t: "orange",
+                        },
                       ]
                     : []),
                   { l: "Closed", v: stats.closed, t: "slate" },
@@ -3241,8 +3331,6 @@ export default function App() {
                 <X className="w-4 h-4" />
               </button>
             </div>
-
-            {/* Reason dropdown only for On Hold, NOT for Waiting for User Input */}
             {holdModalType === "hold" && (
               <Field label="Reason Type" error={holdError}>
                 <div className="relative">
@@ -3262,7 +3350,6 @@ export default function App() {
                 </div>
               </Field>
             )}
-
             <div className={holdModalType === "hold" ? "mt-3" : ""}>
               <Field label="Remarks (optional)">
                 <textarea
@@ -3278,7 +3365,6 @@ export default function App() {
                 />
               </Field>
             </div>
-
             <div className="flex gap-2 mt-4">
               <button
                 onClick={() => setHoldModal(false)}
@@ -3731,6 +3817,7 @@ function TicketModal({
   const isClosed = ticket.status === "Closed";
   const isOnHold = ticket.status === "On Hold";
   const isWaiting = ticket.status === "Waiting for User Input";
+  const isAssigned = ticket.status === "Assigned";
   const catFlow = isHRTicket ? HR_STATUSES : cat ? cat.statuses : [];
   const curIdx = catFlow.indexOf(ticket.status);
   const endRef = useRef(null);
@@ -3738,7 +3825,6 @@ function TicketModal({
   const isReadOnly = (isIT || isHR) && !canAct && ticket.enrolledByIT;
   const isIncident =
     ticket.ticketType === "Incident" || ticket.requestType === "Incident";
-  // On Hold and Waiting for User Input actions only for IT full-flow categories
   const isFullFlowIT =
     !isHRTicket && FULL_FLOW_CATEGORIES.includes(ticket.category);
 
@@ -3751,13 +3837,20 @@ function TicketModal({
   }, [ticket.messages, tab]);
 
   const getById = (id) => allTickets.find((t) => t.id === id);
+
+  // CHANGE 3: nextStatuses — from "Assigned" the only valid next is "In Progress"
+  // From "In Progress" the rest of the flow continues
   const nextStatuses =
     canAct && !isClosed && !isOnHold && !isWaiting
       ? catFlow.filter(
           (s, i) =>
-            i > curIdx && s !== "Closed" && s !== "Waiting for User Input",
+            i > curIdx &&
+            s !== "Closed" &&
+            s !== "Waiting for User Input" &&
+            s !== "On Hold",
         )
       : [];
+
   const allStrikes = ticket.strikes || [];
   const groups = getStrikeGroups(allStrikes);
   const activeGroup =
@@ -3783,6 +3876,12 @@ function TicketModal({
           <div className="flex items-start gap-4">
             <div className="flex-1 min-w-0">
               <div className="flex flex-wrap gap-1.5 mb-2">
+                {/* CHANGE 2: org pill first in modal header too */}
+                <span
+                  className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${ORG_PILL[ticket.org]}`}
+                >
+                  {ticket.org}
+                </span>
                 {isHRTicket ? (
                   <HRPill />
                 ) : cat ? (
@@ -3797,11 +3896,6 @@ function TicketModal({
                   className={`text-[11px] font-bold px-2.5 py-1 rounded-full ${sm.chip}`}
                 >
                   {ticket.status}
-                </span>
-                <span
-                  className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${ORG_PILL[ticket.org]}`}
-                >
-                  {ticket.org}
                 </span>
                 {ticket.requestType && (
                   <span
@@ -3873,11 +3967,6 @@ function TicketModal({
                 <span className="inline-flex items-center gap-1 bg-slate-100 text-slate-600 rounded-full px-2.5 py-1 text-xs font-medium">
                   <User className="w-3 h-3" />
                   {ticket.submittedBy}
-                  {ticket.submittedByEmpId ? (
-                    <span className="mono text-slate-400">
-                      {/* #{ticket.submittedByEmpId} */}
-                    </span>
-                  ) : null}
                 </span>
                 {ticket.onBehalfOf && (
                   <span className="inline-flex items-center gap-1 bg-blue-50 text-blue-700 border border-blue-100 rounded-full px-2.5 py-1 text-xs font-medium">
@@ -4244,7 +4333,7 @@ function TicketModal({
                         className={`w-full h-11 rounded-xl text-sm font-bold text-white transition-colors flex items-center justify-center gap-2 ${isHRTicket ? "bg-indigo-600 hover:bg-indigo-700" : "bg-slate-900 hover:bg-slate-800"}`}
                       >
                         <UserCheck className="w-4 h-4" />
-                        Enroll & Begin Work
+                        Enroll & Assign
                       </button>
                     </div>
                   </Section>
@@ -4305,7 +4394,9 @@ function TicketModal({
                     className={`text-xs font-bold uppercase tracking-widest mb-1.5 flex items-center gap-1.5 ${isWaiting ? "text-orange-600" : "text-amber-600"}`}
                   >
                     <AlertCircle className="w-3.5 h-3.5" />
-                    {isWaiting ? "Waiting Reason" : "Hold Reason"}
+                    {isWaiting
+                      ? "Waiting for User Input Reason"
+                      : "Hold Reason"}
                   </p>
                   {ticket.holdReasonType && (
                     <p className="text-sm font-bold text-slate-800 mb-1">
@@ -4322,6 +4413,25 @@ function TicketModal({
                     </p>
                   )}
                 </div>
+              )}
+
+              {/* CHANGE 3: Show "Move to In Progress" action when ticket is in "Assigned" status */}
+              {canAct && ticket.enrolledByIT && isAssigned && !isClosed && (
+                <Section
+                  title="Start Work"
+                  subtitle="Move this ticket to In Progress when you begin working on it."
+                  accent="amber"
+                >
+                  <div className="mt-3">
+                    <button
+                      onClick={() => onMoveStatus("In Progress")}
+                      className="w-full h-11 rounded-xl bg-blue-600 text-sm font-bold text-white hover:bg-blue-700 flex items-center justify-center gap-2"
+                    >
+                      <Clock3 className="w-4 h-4" />
+                      Move to In Progress
+                    </button>
+                  </div>
+                </Section>
               )}
 
               {/* Three-strike follow-up: only for IT full-flow categories */}
@@ -4364,6 +4474,12 @@ function TicketModal({
                       );
                       const isNext = !strike && activeGroup.length === num - 1;
                       const locked = !strike && !isNext;
+                      // CHANGE 4: response can only be marked on the LAST sent strike
+                      // If a later strike exists, the previous one's response window is closed
+                      const isLastSentStrike =
+                        activeGroup.length > 0 &&
+                        activeGroup[activeGroup.length - 1]?.id === strike?.id;
+
                       return (
                         <div
                           key={num}
@@ -4395,11 +4511,20 @@ function TicketModal({
                                   ✓ Response
                                 </span>
                               )}
-                              {strike && !strike.responseReceived && (
-                                <span className="text-[10px] font-bold text-orange-700 bg-orange-100 px-2 py-0.5 rounded-full border border-orange-200">
-                                  No Reply
-                                </span>
-                              )}
+                              {strike &&
+                                !strike.responseReceived &&
+                                !isLastSentStrike && (
+                                  <span className="text-[10px] font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full border border-slate-200">
+                                    Window Closed
+                                  </span>
+                                )}
+                              {strike &&
+                                !strike.responseReceived &&
+                                isLastSentStrike && (
+                                  <span className="text-[10px] font-bold text-orange-700 bg-orange-100 px-2 py-0.5 rounded-full border border-orange-200">
+                                    No Reply
+                                  </span>
+                                )}
                             </div>
                           </div>
                           {strike && (
@@ -4415,37 +4540,49 @@ function TicketModal({
                               {strike.responseNote}
                             </div>
                           )}
-                          {strike && !strike.responseReceived && (
-                            <div className="mt-2 space-y-2">
-                              <input
-                                type="text"
-                                value={responseForm[strike.id]?.note || ""}
-                                onChange={(e) =>
-                                  setResponseForm((p) => ({
-                                    ...p,
-                                    [strike.id]: {
-                                      ...p[strike.id],
-                                      note: e.target.value,
-                                    },
-                                  }))
-                                }
-                                placeholder="Enter user's response note..."
-                                className="w-full h-9 rounded-lg border border-slate-300 bg-white px-3 text-xs focus:outline-none focus:border-emerald-400"
-                              />
-                              {responseForm[strike.id]?.error && (
-                                <p className="text-[11px] text-red-600">
-                                  {responseForm[strike.id].error}
-                                </p>
-                              )}
-                              <button
-                                onClick={() => onMarkResponse(strike.id)}
-                                className="w-full h-9 rounded-lg bg-emerald-600 text-xs font-bold text-white hover:bg-emerald-700 flex items-center justify-center gap-1.5"
-                              >
-                                <CheckCircle2 className="w-3.5 h-3.5" />
-                                Mark Response Received
-                              </button>
-                            </div>
-                          )}
+                          {/* CHANGE 4: Only show response input on the LAST sent strike (not on earlier ones) */}
+                          {strike &&
+                            !strike.responseReceived &&
+                            isLastSentStrike && (
+                              <div className="mt-2 space-y-2">
+                                <input
+                                  type="text"
+                                  value={responseForm[strike.id]?.note || ""}
+                                  onChange={(e) =>
+                                    setResponseForm((p) => ({
+                                      ...p,
+                                      [strike.id]: {
+                                        ...p[strike.id],
+                                        note: e.target.value,
+                                      },
+                                    }))
+                                  }
+                                  placeholder="Enter user's response note..."
+                                  className="w-full h-9 rounded-lg border border-slate-300 bg-white px-3 text-xs focus:outline-none focus:border-emerald-400"
+                                />
+                                {responseForm[strike.id]?.error && (
+                                  <p className="text-[11px] text-red-600">
+                                    {responseForm[strike.id].error}
+                                  </p>
+                                )}
+                                <button
+                                  onClick={() => onMarkResponse(strike.id)}
+                                  className="w-full h-9 rounded-lg bg-emerald-600 text-xs font-bold text-white hover:bg-emerald-700 flex items-center justify-center gap-1.5"
+                                >
+                                  <CheckCircle2 className="w-3.5 h-3.5" />
+                                  Mark Response Received
+                                </button>
+                              </div>
+                            )}
+                          {/* CHANGE 4: Show "window closed" message for earlier strikes that had no response */}
+                          {strike &&
+                            !strike.responseReceived &&
+                            !isLastSentStrike && (
+                              <div className="mt-2 rounded-lg bg-slate-50 border border-slate-100 px-3 py-2 text-xs text-slate-400 italic">
+                                Response window closed — Strike {num + 1} was
+                                sent without receiving a reply.
+                              </div>
+                            )}
                           {isNext && canSendNext && (
                             <div className="space-y-2">
                               <Field
@@ -4529,11 +4666,13 @@ function TicketModal({
                 </Section>
               )}
 
+              {/* Advance Stage: only show when not Assigned (Assigned uses "Start Work" above) */}
               {canAct &&
                 ticket.enrolledByIT &&
                 !isClosed &&
                 !isOnHold &&
                 !isWaiting &&
+                !isAssigned &&
                 nextStatuses.length > 0 && (
                   <Section title="Advance Stage" subtitle="Move forward.">
                     <div className="mt-3 flex flex-wrap gap-2">
@@ -4555,12 +4694,11 @@ function TicketModal({
                   </Section>
                 )}
 
-              {canAct && ticket.enrolledByIT && !isClosed && (
+              {canAct && ticket.enrolledByIT && !isClosed && !isAssigned && (
                 <Section
                   title={isOnHold || isWaiting ? "Actions" : "Quick Actions"}
                 >
                   <div className="mt-3 flex gap-2 flex-wrap">
-                    {/* On Hold and Waiting buttons only for IT full-flow (software/erp) categories */}
                     {!isOnHold && !isWaiting && isFullFlowIT && (
                       <>
                         <button
@@ -4606,6 +4744,28 @@ function TicketModal({
                     )}
                   </div>
                 </Section>
+              )}
+
+              {/* Also allow closing from Assigned status */}
+              {canAct && ticket.enrolledByIT && !isClosed && isAssigned && (
+                <div className="flex gap-2 mt-1">
+                  <button
+                    onClick={onCloseTicket}
+                    className="flex items-center gap-2 h-9 px-4 rounded-xl bg-slate-800 text-white text-sm font-semibold hover:bg-slate-900"
+                  >
+                    <XCircle className="w-4 h-4" />
+                    Close Ticket
+                  </button>
+                  {ticket.itAssignees?.length > 0 && (
+                    <button
+                      onClick={onReassign}
+                      className="flex items-center gap-2 h-9 px-4 rounded-xl bg-blue-50 text-blue-700 border border-blue-200 text-sm font-semibold hover:bg-blue-100"
+                    >
+                      <RefreshCw className="w-4 h-4" />
+                      Reassign
+                    </button>
+                  )}
+                </div>
               )}
 
               {isClosed && (

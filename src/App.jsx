@@ -23,16 +23,17 @@ function calcEstRow(row) {
   return { salesValue, estMatCost, throughput, tpMargin };
 }
 
-function calcActRow(row, inputs) {
+// Change 2: calcActRow now takes pctInputs (percentages) instead of per-row inputs
+function calcActRow(row, pctInputs) {
   const actSales = Number(row.sales_Value ?? 0);
   const actMatCost = Number(row.act_Mat_Cost ?? 0);
   const foc = Number(row.mat_Cost_FOC ?? 0);
-  const commission = Number(inputs?.commission ?? 0);
-  const freight = Number(inputs?.freight ?? row.freight ?? 0);
-  const packing = Number(inputs?.packing ?? row.packing ?? 0);
-  const ovc = Number(inputs?.ovc ?? 0);
-  const otherDirect = Number(inputs?.other_Direct ?? 0);
-  const fixedCost = Number(inputs?.fixed_Cost ?? 0);
+  const commission = (actSales * Number(pctInputs?.commission ?? 0)) / 100;
+  const freight = (actSales * Number(pctInputs?.freight ?? 0)) / 100;
+  const packing = (actSales * Number(pctInputs?.packing ?? 0)) / 100;
+  const ovc = (actSales * Number(pctInputs?.ovc ?? 0)) / 100;
+  const otherDirect = (actSales * Number(pctInputs?.other_Direct ?? 0)) / 100;
+  const fixedCost = (actSales * Number(pctInputs?.fixed_Cost ?? 0)) / 100;
   const throughput = actSales - actMatCost - foc;
   const totalOVC = commission + freight + packing + ovc + otherDirect;
   const contribution = throughput - totalOVC;
@@ -82,7 +83,6 @@ function useMaterialCosts(rows) {
             if (res?.status_Code === 200) {
               const estItems = res.data?.estimatedMaterials || [];
               const actItems = res.data?.actualMaterials || [];
-
               const resolveItemCost = (item) => {
                 const c = Number(item.cost);
                 const isMissing =
@@ -93,7 +93,6 @@ function useMaterialCosts(rows) {
                 if (isMissing) return Number(item.budgeted_Cost ?? 0);
                 return c;
               };
-
               const sumItems = (items) =>
                 items.reduce((s, i) => {
                   const isMTO = i.mC_Type === "MTO";
@@ -106,10 +105,8 @@ function useMaterialCosts(rows) {
                       );
                   return s + v;
                 }, 0);
-
               const hasIncomplete = (items) =>
                 items.some((i) => i.cost == null || i.cost === "");
-
               const hasMTOUnresolvable = (items) =>
                 items
                   .filter((i) => i.mC_Type === "MTO")
@@ -127,7 +124,6 @@ function useMaterialCosts(rows) {
                         Number(i.budgeted_Cost) === 0)
                     );
                   });
-
               return {
                 key,
                 estMatCost: sumItems(estItems),
@@ -468,7 +464,7 @@ const S = {
   modal: {
     background: C.surface,
     borderRadius: 14,
-    width: "min(820px, 96vw)",
+    width: "min(1100px, 96vw)",
     maxHeight: "88vh",
     overflow: "hidden",
     boxShadow: "0 20px 60px rgba(0,0,0,0.18)",
@@ -528,61 +524,21 @@ const S = {
             ? C.violet
             : C.amber,
   }),
-  sectionHeader: (type) => ({
-    display: "flex",
-    alignItems: "center",
-    gap: 8,
-    padding: "9px 16px",
-    background: type === "MTS" ? C.sectionMts : C.sectionMto,
-    borderTop: `1px solid ${type === "MTS" ? C.sectionMtsBorder : C.sectionMtoBorder}`,
-    borderBottom: `1px solid ${type === "MTS" ? C.sectionMtsBorder : C.sectionMtoBorder}`,
-    cursor: "pointer",
-    userSelect: "none",
-  }),
-  sectionTitle: (type) => ({
-    fontSize: 12,
-    fontWeight: 700,
-    color: type === "MTS" ? C.emerald : C.violet,
-    letterSpacing: "0.2px",
-  }),
-  summaryRow: {
-    display: "flex",
-    gap: 10,
-    padding: "8px 16px",
-    flexWrap: "wrap",
-  },
-  summaryChip: (color) => ({
-    display: "flex",
-    flexDirection: "column",
-    gap: 1,
-    padding: "6px 12px",
-    borderRadius: 7,
-    background:
-      color === "violet"
-        ? "rgba(124,58,237,0.06)"
-        : color === "amber"
-          ? "rgba(217,119,6,0.06)"
-          : "rgba(5,150,105,0.06)",
-    border: `1px solid ${color === "violet" ? "rgba(124,58,237,0.2)" : color === "amber" ? "rgba(217,119,6,0.2)" : "rgba(5,150,105,0.2)"}`,
-    minWidth: 90,
-  }),
-  summaryChipLabel: {
-    fontSize: 9,
-    fontWeight: 600,
-    textTransform: "uppercase",
-    letterSpacing: "0.5px",
-    color: C.textMuted,
-  },
-  summaryChipValue: (color) => ({
-    fontSize: 13,
-    fontWeight: 700,
-    color:
-      color === "violet" ? C.violet : color === "amber" ? C.amber : C.emerald,
-  }),
   budgetInput: {
     width: 88,
     background: "#faf5ff",
     border: `1px solid ${C.sectionMtoBorder}`,
+    borderRadius: 5,
+    padding: "3px 6px",
+    fontSize: 11,
+    color: C.text,
+    textAlign: "right",
+    outline: "none",
+  },
+  targetInput: {
+    width: 88,
+    background: "#f0f9ff",
+    border: "1px solid #bae6fd",
     borderRadius: 5,
     padding: "3px 6px",
     fontSize: 11,
@@ -607,38 +563,16 @@ function MetricCard({ label, value, color, accent }) {
   );
 }
 
-// ─── SCROLLABLE TABLE WRAPPER ─────────────────────────────────────────────────
-function ScrollTable({ header, body, footer, minWidth = 900 }) {
-  return (
-    <div style={{ ...S.tableWrap }}>
-      <table
-        style={{
-          ...S.table,
-          minWidth,
-          borderCollapse: "separate",
-          borderSpacing: 0,
-        }}
-      >
-        <thead>{header}</thead>
-        <tbody>{body}</tbody>
-        {footer && <tfoot>{footer}</tfoot>}
-      </table>
-    </div>
-  );
-}
-
 // ─── DESCRIPTION CELL ────────────────────────────────────────────────────────
 function DescCell({ text, width = 200 }) {
   const [hovered, setHovered] = useState(false);
   const ref = useRef(null);
   const [pos, setPos] = useState({ top: 0, left: 0 });
-
   const onEnter = (e) => {
     const rect = e.currentTarget.getBoundingClientRect();
     setPos({ top: rect.bottom + 4, left: rect.left });
     setHovered(true);
   };
-
   return (
     <td
       ref={ref}
@@ -690,15 +624,19 @@ function DescCell({ text, width = 200 }) {
   );
 }
 
-// ─── MATERIAL COST MODAL ──────────────────────────────────────────────────────
+// ─── MATERIAL COST MODAL (Change 3) ──────────────────────────────────────────
 function MaterialCostModal({ title, items, onClose, isActual, oaNo, fgCode }) {
   const [budgetEdits, setBudgetEdits] = useState({});
+  const [targetEdits, setTargetEdits] = useState({});
   const [saving, setSaving] = useState(false);
   const [saveMsg, setSaveMsg] = useState("");
-  const [mtsOpen, setMtsOpen] = useState(true);
-  const [mtoOpen, setMtoOpen] = useState(true);
+  // Top-level tabs: detailed | summary
+  const [activeTab, setActiveTab] = useState("detailed");
+  // Detail sub-tabs: MTS | MTO
+  const [detailTab, setDetailTab] = useState("MTS");
 
   const mtsItems = isActual ? items.filter((i) => i.mC_Type === "MTS") : [];
+  const mtoItems = isActual ? items.filter((i) => i.mC_Type === "MTO") : [];
 
   const mtoNeedsBudget = (item) => {
     const c = Number(item.cost);
@@ -707,25 +645,56 @@ function MaterialCostModal({ title, items, onClose, isActual, oaNo, fgCode }) {
     );
   };
 
-  const rawMtoItems = isActual ? items.filter((i) => i.mC_Type === "MTO") : [];
-  const mtoItems = useMemo(() => {
-    const missing = rawMtoItems.filter(mtoNeedsBudget);
-    const present = rawMtoItems.filter((i) => !mtoNeedsBudget(i));
-    return [...missing, ...present];
-  }, [rawMtoItems]);
+  const mtoNeedsBudgetItems = mtoItems.filter(mtoNeedsBudget);
 
-  const hasIncomplete = items.some((i) => i.cost == null || i.cost === "");
+  const mtsTotal = mtsItems.reduce((s, i) => s + Number(i.cost ?? 0), 0);
+  const mtoTotal = mtoItems.reduce((s, i) => {
+    const id = i.actual_Cost_Id;
+    const c = Number(i.cost);
+    const isMissing = mtoNeedsBudget(i);
+    const budgeted =
+      budgetEdits[id] !== undefined
+        ? Number(budgetEdits[id])
+        : Number(i.budgeted_Cost ?? 0);
+    return s + (isMissing ? budgeted : c);
+  }, 0);
 
-  const handleBudgetChange = (id, val) =>
-    setBudgetEdits((prev) => ({ ...prev, [id]: val }));
-
-  const hasEditedMTO = Object.keys(budgetEdits).length > 0;
+  // Build category summary across all items
+  const categoryMap = useMemo(() => {
+    const map = {};
+    const allItems = isActual ? items : items;
+    allItems.forEach((item) => {
+      const cat = item.category || "Uncategorized";
+      if (!map[cat])
+        map[cat] = {
+          cost: 0,
+          designEst: 0,
+          targetCost: 0,
+          needsBudget: 0,
+          count: 0,
+        };
+      const c = Number(item.cost ?? 0);
+      const bud = Number(item.budgeted_Cost ?? 0);
+      const id = item.actual_Cost_Id ?? item.estimated_Cost_Id;
+      const tgt =
+        targetEdits[id] !== undefined
+          ? Number(targetEdits[id])
+          : Number(item.targeted_Cost ?? 0);
+      const isMissing = isActual ? mtoNeedsBudget(item) : false;
+      map[cat].cost += c;
+      map[cat].designEst += bud;
+      map[cat].targetCost += tgt;
+      if (isMissing) map[cat].needsBudget++;
+      map[cat].count++;
+    });
+    return map;
+  }, [items, targetEdits]);
 
   const handleSaveBudgets = async () => {
     setSaving(true);
     setSaveMsg("");
     try {
-      const mtoEdited = mtoItems
+      const budgetRows = mtoItems
         .filter(
           (item) =>
             mtoNeedsBudget(item) &&
@@ -735,13 +704,28 @@ function MaterialCostModal({ title, items, onClose, isActual, oaNo, fgCode }) {
         .map((item) => ({
           actual_Cost_Id: item.actual_Cost_Id,
           budgeted_Cost: Number(budgetEdits[item.actual_Cost_Id]),
+          targeted_Cost:
+            targetEdits[item.actual_Cost_Id] !== undefined
+              ? Number(targetEdits[item.actual_Cost_Id])
+              : (item.targeted_Cost ?? 0),
         }));
-
-      if (mtoEdited.length > 0) {
+      const targetOnlyRows = mtoItems
+        .filter(
+          (item) =>
+            !mtoNeedsBudget(item) &&
+            targetEdits[item.actual_Cost_Id] !== undefined,
+        )
+        .map((item) => ({
+          actual_Cost_Id: item.actual_Cost_Id,
+          budgeted_Cost: Number(item.budgeted_Cost ?? 0),
+          targeted_Cost: Number(targetEdits[item.actual_Cost_Id]),
+        }));
+      const payload = [...budgetRows, ...targetOnlyRows];
+      if (payload.length > 0) {
         await ProjectProfitabilityService.UpdateBudgetedCosts({
-          items: mtoEdited,
+          items: payload,
         });
-        setSaveMsg("✓ Budgeted costs saved");
+        setSaveMsg("✓ Saved successfully");
       }
     } catch (e) {
       setSaveMsg("⚠ Failed to save");
@@ -752,117 +736,147 @@ function MaterialCostModal({ title, items, onClose, isActual, oaNo, fgCode }) {
     }
   };
 
-  const mtsTotal = mtsItems.reduce((s, i) => s + Number(i.cost ?? 0), 0);
+  // Top-level tab button with inline summary
+  const TopTabBtn = ({ tabKey, label, summary }) => (
+    <button
+      onClick={() => setActiveTab(tabKey)}
+      style={{
+        padding: "7px 16px",
+        borderRadius: 6,
+        fontSize: 12,
+        fontWeight: 600,
+        cursor: "pointer",
+        border: "none",
+        outline: "none",
+        background:
+          activeTab === tabKey
+            ? `linear-gradient(135deg,${C.cyan},${C.violet})`
+            : "transparent",
+        color: activeTab === tabKey ? "#fff" : C.textMuted,
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "flex-start",
+        gap: 1,
+        transition: "all 0.15s",
+      }}
+    >
+      <span>{label}</span>
+      {summary && (
+        <span
+          style={{
+            fontSize: 10,
+            opacity: 0.85,
+            fontWeight: 400,
+            whiteSpace: "nowrap",
+          }}
+        >
+          {summary}
+        </span>
+      )}
+    </button>
+  );
 
-  const mtoTotal = mtoItems.reduce((s, i) => {
-    const id = i.actual_Cost_Id;
-    const edited = budgetEdits[id];
-    const c = Number(i.cost);
-    const isMissing = mtoNeedsBudget(i);
-    const v = isMissing
-      ? edited !== undefined && edited !== ""
-        ? Number(edited)
-        : Number(i.budgeted_Cost ?? 0)
-      : c;
-    return s + v;
-  }, 0);
-
-  const SummaryChip = ({ label, value, color }) => (
-    <div style={S.summaryChip(color)}>
-      <span style={S.summaryChipLabel}>{label}</span>
-      <span style={S.summaryChipValue(color)}>{value}</span>
+  // Detail sub-tab selector card
+  const DetailTabCard = ({
+    tabKey,
+    label,
+    count,
+    total,
+    needsBudget,
+    color,
+  }) => (
+    <div
+      onClick={() => setDetailTab(tabKey)}
+      style={{
+        padding: "8px 14px",
+        borderRadius: 8,
+        fontSize: 12,
+        fontWeight: 600,
+        cursor: "pointer",
+        border: `1px solid ${detailTab === tabKey ? color : C.borderLight}`,
+        background:
+          detailTab === tabKey
+            ? color === C.emerald
+              ? "rgba(5,150,105,0.08)"
+              : "rgba(124,58,237,0.08)"
+            : C.surface,
+        color: detailTab === tabKey ? color : C.textMuted,
+        display: "flex",
+        flexDirection: "column",
+        gap: 4,
+        minWidth: 160,
+        transition: "all 0.15s",
+      }}
+    >
+      <div
+        style={{
+          display: "flex",
+          gap: 6,
+          alignItems: "center",
+          flexWrap: "wrap",
+        }}
+      >
+        <span>{label}</span>
+        <span style={S.badge(tabKey === "MTS" ? "green" : "violet")}>
+          {count} items
+        </span>
+        {needsBudget > 0 && (
+          <span style={S.badge("red")}>{needsBudget} need budget</span>
+        )}
+      </div>
+      <span style={{ fontSize: 11, color: C.textMuted, fontWeight: 400 }}>
+        Total: ₹{fmt(total)}
+      </span>
     </div>
   );
 
-  const renderMTSTable = () => (
-    <div style={{ padding: "0 16px 10px", overflowX: "auto" }}>
+  // Render a material table (MTS or MTO)
+  const renderMaterialTable = (tableItems, isMTO) => (
+    <div style={{ overflowX: "auto", padding: "0 16px 12px" }}>
       <table style={{ ...S.table, minWidth: "unset", width: "100%" }}>
         <thead>
           <tr>
             <th style={{ ...S.th(), ...S.thLeft, position: "sticky", top: 0 }}>
               Material
             </th>
-            <th style={{ ...S.th(C.emerald), position: "sticky", top: 0 }}>
+            <th
+              style={{
+                ...S.th(C.textMuted),
+                position: "sticky",
+                top: 0,
+                minWidth: 100,
+              }}
+            >
+              Category
+            </th>
+            <th
+              style={{
+                ...S.th(isMTO ? C.violet : C.emerald),
+                position: "sticky",
+                top: 0,
+              }}
+            >
               Cost (₹)
             </th>
+            {isMTO && (
+              <th style={{ ...S.th(C.amber), position: "sticky", top: 0 }}>
+                Design Est. Cost (₹)
+              </th>
+            )}
+            {isMTO && (
+              <th style={{ ...S.th(C.sky), position: "sticky", top: 0 }}>
+                Target Cost (₹)
+              </th>
+            )}
           </tr>
         </thead>
         <tbody>
-          {mtsItems.map((item, li) => {
-            const c = Number(item.cost);
-            const missing = item.cost == null || item.cost === "";
+          {tableItems.map((item, li) => {
+            const id = item.actual_Cost_Id ?? item.estimated_Cost_Id;
+            const missing = isMTO ? mtoNeedsBudget(item) : false;
             return (
               <tr
-                key={item.actual_Cost_Id ?? li}
-                style={{
-                  background: missing
-                    ? C.redCell
-                    : li % 2 === 0
-                      ? C.surface
-                      : C.surfaceAlt,
-                }}
-              >
-                <td
-                  style={{
-                    ...S.td,
-                    ...S.tdLeft,
-                    fontWeight: 600,
-                    maxWidth: 280,
-                  }}
-                >
-                  {item.material_Name}
-                </td>
-                <td
-                  style={{
-                    ...S.td,
-                    color: missing ? C.rose : C.text,
-                    fontWeight: missing ? 700 : 400,
-                  }}
-                >
-                  {missing ? (
-                    <span style={S.redCell}>Missing</span>
-                  ) : (
-                    `₹${fmt(c)}`
-                  )}
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-        <tfoot>
-          <tr style={S.totalRow}>
-            <td style={{ ...S.totalTd(), ...S.tdLeft }}>Total</td>
-            <td style={{ ...S.totalTd(), color: C.emerald }}>
-              ₹{fmt(mtsTotal)}
-            </td>
-          </tr>
-        </tfoot>
-      </table>
-    </div>
-  );
-
-  const renderMTOTable = () => (
-    <div style={{ padding: "0 16px 10px", overflowX: "auto" }}>
-      <table style={{ ...S.table, minWidth: "unset", width: "100%" }}>
-        <thead>
-          <tr>
-            <th style={{ ...S.th(), ...S.thLeft, position: "sticky", top: 0 }}>
-              Material
-            </th>
-            <th style={{ ...S.th(C.violet), position: "sticky", top: 0 }}>
-              Cost (₹)
-            </th>
-            <th style={{ ...S.th(C.amber), position: "sticky", top: 0 }}>
-              Budgeted Cost (₹)
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          {mtoItems.map((item, li) => {
-            const missing = mtoNeedsBudget(item);
-            return (
-              <tr
-                key={item.actual_Cost_Id ?? li}
+                key={id ?? li}
                 style={{
                   background: missing
                     ? C.redCell
@@ -888,7 +902,7 @@ function MaterialCostModal({ title, items, onClose, isActual, oaNo, fgCode }) {
                         fontWeight: 700,
                         color: C.rose,
                         background: "rgba(225,29,72,0.10)",
-                        border: `1px solid rgba(225,29,72,0.25)`,
+                        border: "1px solid rgba(225,29,72,0.25)",
                         borderRadius: 4,
                         padding: "1px 5px",
                         verticalAlign: "middle",
@@ -897,6 +911,16 @@ function MaterialCostModal({ title, items, onClose, isActual, oaNo, fgCode }) {
                       NEEDS BUDGET
                     </span>
                   )}
+                </td>
+                <td
+                  style={{
+                    ...S.td,
+                    fontSize: 11,
+                    color: C.textMuted,
+                    textAlign: "left",
+                  }}
+                >
+                  {item.category || "—"}
                 </td>
                 <td
                   style={{
@@ -911,24 +935,149 @@ function MaterialCostModal({ title, items, onClose, isActual, oaNo, fgCode }) {
                     `₹${fmt(item.cost)}`
                   )}
                 </td>
-                <td style={S.td}>
-                  {missing ? (
+                {isMTO && (
+                  <td style={S.td}>
+                    {missing ? (
+                      <input
+                        type="number"
+                        min={0}
+                        style={S.budgetInput}
+                        value={
+                          budgetEdits[id] !== undefined
+                            ? budgetEdits[id]
+                            : (item.budgeted_Cost ?? "")
+                        }
+                        placeholder="Enter"
+                        onChange={(e) =>
+                          setBudgetEdits((p) => ({
+                            ...p,
+                            [id]: e.target.value,
+                          }))
+                        }
+                      />
+                    ) : (
+                      <span style={{ color: C.textMuted, fontSize: 11 }}>
+                        {item.budgeted_Cost
+                          ? `₹${fmt(item.budgeted_Cost)}`
+                          : "—"}
+                      </span>
+                    )}
+                  </td>
+                )}
+                {isMTO && (
+                  <td style={S.td}>
                     <input
                       type="number"
                       min={0}
-                      style={S.budgetInput}
+                      style={S.targetInput}
                       value={
-                        budgetEdits[item.actual_Cost_Id] !== undefined
-                          ? budgetEdits[item.actual_Cost_Id]
-                          : (item.budgeted_Cost ?? "")
+                        targetEdits[id] !== undefined
+                          ? targetEdits[id]
+                          : (item.targeted_Cost ?? "")
                       }
-                      placeholder="Enter budget"
+                      placeholder="Enter"
                       onChange={(e) =>
-                        handleBudgetChange(item.actual_Cost_Id, e.target.value)
+                        setTargetEdits((p) => ({ ...p, [id]: e.target.value }))
                       }
                     />
+                  </td>
+                )}
+              </tr>
+            );
+          })}
+        </tbody>
+        <tfoot>
+          <tr style={S.totalRow}>
+            <td style={{ ...S.totalTd(), ...S.tdLeft }} colSpan={2}>
+              Total
+            </td>
+            <td style={{ ...S.totalTd(), color: isMTO ? C.violet : C.emerald }}>
+              ₹
+              {fmt(
+                tableItems.reduce((s, i) => {
+                  const id = i.actual_Cost_Id ?? i.estimated_Cost_Id;
+                  const c = Number(i.cost ?? 0);
+                  const isMissing = isMTO ? mtoNeedsBudget(i) : false;
+                  const bud =
+                    budgetEdits[id] !== undefined
+                      ? Number(budgetEdits[id])
+                      : Number(i.budgeted_Cost ?? 0);
+                  return s + (isMissing ? bud : c);
+                }, 0),
+              )}
+            </td>
+            {isMTO && <td style={S.totalTd()}>—</td>}
+            {isMTO && <td style={S.totalTd()}>—</td>}
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  );
+
+  // Estimated materials table (non-actual)
+  const renderEstimatedTable = () => (
+    <div style={{ padding: "14px 16px" }}>
+      <table style={{ ...S.table, minWidth: "unset" }}>
+        <thead>
+          <tr>
+            <th style={{ ...S.th(), ...S.thLeft }}>Material</th>
+            <th style={{ ...S.th(C.textMuted) }}>Category</th>
+            <th style={S.th()}>Cost (₹)</th>
+            <th style={{ ...S.th(), textAlign: "center" }}>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {items.map((item, i) => {
+            const missingCost = item.cost == null || item.cost === "";
+            const hasBudgeted =
+              item.budgeted_Cost != null && item.budgeted_Cost !== "";
+            const displayCost = missingCost
+              ? hasBudgeted
+                ? item.budgeted_Cost
+                : null
+              : item.cost;
+            return (
+              <tr
+                key={i}
+                style={{
+                  background: missingCost
+                    ? C.redCell
+                    : i % 2 === 0
+                      ? C.surface
+                      : C.surfaceAlt,
+                }}
+              >
+                <td style={{ ...S.td, ...S.tdLeft, fontWeight: 600 }}>
+                  {item.material_Name}
+                </td>
+                <td
+                  style={{
+                    ...S.td,
+                    fontSize: 11,
+                    color: C.textMuted,
+                    textAlign: "left",
+                  }}
+                >
+                  {item.category || "—"}
+                </td>
+                <td
+                  style={{
+                    ...S.td,
+                    color: missingCost ? C.rose : C.text,
+                    fontWeight: missingCost ? 700 : 400,
+                  }}
+                >
+                  {displayCost != null ? (
+                    `₹${fmt(displayCost)}`
                   ) : (
-                    <span style={{ color: C.textMuted, fontSize: 11 }}>—</span>
+                    <span style={S.redCell}>Missing</span>
+                  )}
+                </td>
+                <td style={{ ...S.td, textAlign: "center" }}>
+                  {missingCost ? (
+                    <span style={S.badge("red")}>Incomplete</span>
+                  ) : (
+                    <span style={S.badge("green")}>OK</span>
                   )}
                 </td>
               </tr>
@@ -937,9 +1086,23 @@ function MaterialCostModal({ title, items, onClose, isActual, oaNo, fgCode }) {
         </tbody>
         <tfoot>
           <tr style={S.totalRow}>
-            <td style={{ ...S.totalTd(), ...S.tdLeft }}>Total</td>
-            <td style={{ ...S.totalTd(), color: C.violet }}>
-              ₹{fmt(mtoTotal)}
+            <td style={{ ...S.totalTd(), ...S.tdLeft }} colSpan={2}>
+              Total
+            </td>
+            <td style={S.totalTd()}>
+              ₹
+              {fmt(
+                items.reduce(
+                  (s, i) =>
+                    s +
+                    Number(
+                      i.cost == null || i.cost === ""
+                        ? (i.budgeted_Cost ?? 0)
+                        : (i.cost ?? 0),
+                    ),
+                  0,
+                ),
+              )}
             </td>
             <td style={S.totalTd()}></td>
           </tr>
@@ -948,7 +1111,100 @@ function MaterialCostModal({ title, items, onClose, isActual, oaNo, fgCode }) {
     </div>
   );
 
-  const showMTOFooter = isActual && mtoItems.length > 0;
+  // Summary tab content
+  const renderSummary = () => {
+    const categories = Object.entries(categoryMap);
+    const grandCost = categories.reduce((s, [, d]) => s + d.cost, 0);
+    const grandDesign = categories.reduce((s, [, d]) => s + d.designEst, 0);
+    const grandTarget = categories.reduce((s, [, d]) => s + d.targetCost, 0);
+    const grandNeedsBud = categories.reduce((s, [, d]) => s + d.needsBudget, 0);
+    const grandCount = categories.reduce((s, [, d]) => s + d.count, 0);
+    return (
+      <div style={{ padding: "14px 16px", overflowX: "auto" }}>
+        <table style={{ ...S.table, minWidth: "unset", width: "100%" }}>
+          <thead>
+            <tr>
+              <th style={{ ...S.th(), ...S.thLeft }}>Category</th>
+              <th style={S.th()}>Items</th>
+              <th style={S.th(C.violet)}>Actual Cost (₹)</th>
+              <th style={S.th(C.amber)}>Design Est. Cost (₹)</th>
+              <th style={S.th(C.sky)}>Target Cost (₹)</th>
+              <th style={S.th(C.rose)}>Needs Budget</th>
+            </tr>
+          </thead>
+          <tbody>
+            {categories.map(([cat, d], i) => (
+              <tr
+                key={cat}
+                style={{ background: i % 2 === 0 ? C.surface : C.surfaceAlt }}
+              >
+                <td style={{ ...S.td, ...S.tdLeft, fontWeight: 600 }}>{cat}</td>
+                <td style={S.td}>{d.count}</td>
+                <td style={{ ...S.td, fontWeight: 700, color: C.violet }}>
+                  ₹{fmt(d.cost)}
+                </td>
+                <td style={{ ...S.td, color: C.amber }}>
+                  {d.designEst > 0 ? `₹${fmt(d.designEst)}` : "—"}
+                </td>
+                <td style={{ ...S.td, color: C.sky }}>
+                  {d.targetCost > 0 ? `₹${fmt(d.targetCost)}` : "—"}
+                </td>
+                <td
+                  style={{
+                    ...S.td,
+                    color: d.needsBudget > 0 ? C.rose : C.emerald,
+                    fontWeight: 700,
+                  }}
+                >
+                  {d.needsBudget > 0 ? d.needsBudget : "—"}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+          <tfoot>
+            <tr style={S.totalRow}>
+              <td style={{ ...S.totalTd(), ...S.tdLeft }}>Total</td>
+              <td style={S.totalTd()}>{grandCount}</td>
+              <td style={{ ...S.totalTd(), color: C.violet }}>
+                ₹{fmt(grandCost)}
+              </td>
+              <td style={{ ...S.totalTd(), color: C.amber }}>
+                {grandDesign > 0 ? `₹${fmt(grandDesign)}` : "—"}
+              </td>
+              <td style={{ ...S.totalTd(), color: C.sky }}>
+                {grandTarget > 0 ? `₹${fmt(grandTarget)}` : "—"}
+              </td>
+              <td
+                style={{
+                  ...S.totalTd(),
+                  color: grandNeedsBud > 0 ? C.rose : C.emerald,
+                }}
+              >
+                {grandNeedsBud > 0 ? grandNeedsBud : "—"}
+              </td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    );
+  };
+
+  const grandTotal = isActual
+    ? mtsTotal + mtoTotal
+    : items.reduce(
+        (s, i) =>
+          s +
+          Number(
+            i.cost == null || i.cost === ""
+              ? (i.budgeted_Cost ?? 0)
+              : (i.cost ?? 0),
+          ),
+        0,
+      );
+  const detailedSummaryLabel = isActual
+    ? `MTS ₹${fmt(mtsTotal)} · MTO ₹${fmt(mtoTotal)}${mtoNeedsBudgetItems.length ? ` · ${mtoNeedsBudgetItems.length} need budget` : ""}`
+    : `${items.length} items · ₹${fmt(grandTotal)}`;
+  const summaryTabLabel = `₹${fmt(grandTotal)} · ${items.length} items`;
 
   return (
     <div style={S.overlay} onClick={onClose}>
@@ -967,239 +1223,75 @@ function MaterialCostModal({ title, items, onClose, isActual, oaNo, fgCode }) {
           </button>
         </div>
 
-        {hasIncomplete && (
-          <div style={{ padding: "8px 16px 0", flexShrink: 0 }}>
-            <div
-              style={{
-                background: "#fff1f2",
-                border: "1px solid #fda4af",
-                borderRadius: 7,
-                padding: "6px 10px",
-                fontSize: 11,
-                color: C.rose,
-              }}
-            >
-              ⚠ Some material costs are missing or incomplete.
-            </div>
-          </div>
-        )}
+        {/* Top-level tab bar with inline summaries */}
+        <div
+          style={{
+            display: "flex",
+            gap: 3,
+            padding: "8px 16px 0",
+            background: C.surface,
+            borderBottom: `1px solid ${C.border}`,
+            flexShrink: 0,
+          }}
+        >
+          <TopTabBtn
+            tabKey="detailed"
+            label="📋 Detailed"
+            summary={detailedSummaryLabel}
+          />
+          <TopTabBtn
+            tabKey="summary"
+            label="📊 Summary"
+            summary={summaryTabLabel}
+          />
+        </div>
 
         <div style={S.modalBody}>
-          {isActual ? (
-            <div style={{ paddingBottom: 4 }}>
-              {mtsItems.length > 0 && (
-                <>
-                  <div
-                    style={S.sectionHeader("MTS")}
-                    onClick={() => setMtsOpen((v) => !v)}
-                  >
-                    <span style={S.sectionTitle("MTS")}>
-                      🟢 MTS — Make to Stock
-                    </span>
-                    <span style={S.badge("green")}>
-                      {mtsItems.length} item{mtsItems.length !== 1 ? "s" : ""}
-                    </span>
-                    <span
-                      style={{
-                        marginLeft: "auto",
-                        fontSize: 13,
-                        color: C.emerald,
-                      }}
-                    >
-                      {mtsOpen ? "▲" : "▼"}
-                    </span>
-                  </div>
-                  {mtsOpen && (
-                    <>
-                      <div style={S.summaryRow}>
-                        <SummaryChip
-                          label="Total"
-                          value={`₹${fmt(mtsTotal)}`}
-                          color="green"
-                        />
-                        <SummaryChip
-                          label="Items"
-                          value={mtsItems.length}
-                          color="green"
-                        />
-                        <SummaryChip
-                          label="Incomplete"
-                          value={
-                            mtsItems.filter(
-                              (i) => i.cost == null || i.cost === "",
-                            ).length
-                          }
-                          color={
-                            mtsItems.filter(
-                              (i) => i.cost == null || i.cost === "",
-                            ).length > 0
-                              ? "amber"
-                              : "green"
-                          }
-                        />
-                      </div>
-                      {renderMTSTable()}
-                    </>
-                  )}
-                </>
-              )}
+          {activeTab === "summary" && renderSummary()}
 
-              {mtoItems.length > 0 && (
-                <>
-                  <div
-                    style={{
-                      ...S.sectionHeader("MTO"),
-                      marginTop: mtsItems.length > 0 ? 6 : 0,
-                    }}
-                    onClick={() => setMtoOpen((v) => !v)}
-                  >
-                    <span style={S.sectionTitle("MTO")}>
-                      🟣 MTO — Make to Order
-                    </span>
-                    <span style={S.badge("violet")}>
-                      {mtoItems.length} item{mtoItems.length !== 1 ? "s" : ""}
-                    </span>
-                    {mtoItems.some((i) => mtoNeedsBudget(i)) && (
-                      <span style={{ ...S.badge("red"), marginLeft: 6 }}>
-                        Has Incomplete
-                      </span>
-                    )}
-                    <span
-                      style={{
-                        marginLeft: "auto",
-                        fontSize: 13,
-                        color: C.violet,
-                      }}
-                    >
-                      {mtoOpen ? "▲" : "▼"}
-                    </span>
-                  </div>
-                  {mtoOpen && (
-                    <>
-                      <div style={S.summaryRow}>
-                        <SummaryChip
-                          label="Total"
-                          value={`₹${fmt(mtoTotal)}`}
-                          color="violet"
-                        />
-                        <SummaryChip
-                          label="Items"
-                          value={mtoItems.length}
-                          color="violet"
-                        />
-                        <SummaryChip
-                          label="Needs Budget"
-                          value={mtoItems.filter(mtoNeedsBudget).length}
-                          color={
-                            mtoItems.filter(mtoNeedsBudget).length > 0
-                              ? "amber"
-                              : "violet"
-                          }
-                        />
-                      </div>
-                      {renderMTOTable()}
-                    </>
-                  )}
-                </>
-              )}
+          {activeTab === "detailed" && !isActual && renderEstimatedTable()}
 
-              {mtsItems.length === 0 && mtoItems.length === 0 && (
-                <div style={{ padding: "14px 16px" }}>
-                  <p style={{ color: C.textMuted, fontSize: 13 }}>
-                    No items found.
-                  </p>
-                </div>
-              )}
-            </div>
-          ) : (
-            <div style={{ padding: "14px 16px" }}>
-              <table style={{ ...S.table, minWidth: "unset" }}>
-                <thead>
-                  <tr>
-                    <th style={{ ...S.th(), ...S.thLeft }}>Material</th>
-                    <th style={S.th()}>Cost (₹)</th>
-                    <th style={{ ...S.th(), textAlign: "center" }}>Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {items.map((item, i) => {
-                    const missingCost = item.cost == null || item.cost === "";
-                    const hasBudgeted =
-                      item.budgeted_Cost != null && item.budgeted_Cost !== "";
-                    const displayCost = missingCost
-                      ? hasBudgeted
-                        ? item.budgeted_Cost
-                        : null
-                      : item.cost;
-                    return (
-                      <tr
-                        key={i}
-                        style={{
-                          background: missingCost
-                            ? C.redCell
-                            : i % 2 === 0
-                              ? C.surface
-                              : C.surfaceAlt,
-                        }}
-                      >
-                        <td style={{ ...S.td, ...S.tdLeft, fontWeight: 600 }}>
-                          {item.material_Name}
-                        </td>
-                        <td
-                          style={{
-                            ...S.td,
-                            color: missingCost ? C.rose : C.text,
-                            fontWeight: missingCost ? 700 : 400,
-                          }}
-                        >
-                          {displayCost != null ? (
-                            `₹${fmt(displayCost)}`
-                          ) : (
-                            <span style={S.redCell}>Missing</span>
-                          )}
-                        </td>
-                        <td style={{ ...S.td, textAlign: "center" }}>
-                          {missingCost ? (
-                            <span style={S.badge("red")}>Incomplete</span>
-                          ) : (
-                            <span style={S.badge("green")}>OK</span>
-                          )}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-                <tfoot>
-                  <tr style={S.totalRow}>
-                    <td style={{ ...S.totalTd(), ...S.tdLeft }}>Total</td>
-                    <td style={S.totalTd()}>
-                      ₹
-                      {fmt(
-                        items.reduce((s, i) => {
-                          const v =
-                            i.cost == null || i.cost === ""
-                              ? (i.budgeted_Cost ?? 0)
-                              : (i.cost ?? 0);
-                          return s + Number(v);
-                        }, 0),
-                      )}
-                    </td>
-                    <td style={S.totalTd()}></td>
-                  </tr>
-                </tfoot>
-              </table>
+          {activeTab === "detailed" && isActual && (
+            <div>
+              {/* MTS / MTO sub-tab selector */}
+              <div
+                style={{
+                  display: "flex",
+                  gap: 8,
+                  padding: "12px 16px 8px",
+                  flexShrink: 0,
+                }}
+              >
+                <DetailTabCard
+                  tabKey="MTS"
+                  label="MTS — Make to Stock"
+                  count={mtsItems.length}
+                  total={mtsTotal}
+                  color={C.emerald}
+                />
+                <DetailTabCard
+                  tabKey="MTO"
+                  label="MTO — Make to Order"
+                  count={mtoItems.length}
+                  total={mtoTotal}
+                  needsBudget={mtoNeedsBudgetItems.length}
+                  color={C.violet}
+                />
+              </div>
+              {detailTab === "MTS" && renderMaterialTable(mtsItems, false)}
+              {detailTab === "MTO" && renderMaterialTable(mtoItems, true)}
             </div>
           )}
         </div>
 
-        {showMTOFooter && (
+        {isActual && (
           <div style={S.modalFooter}>
             <button
               style={S.btn("emerald")}
               onClick={handleSaveBudgets}
-              disabled={saving || !hasEditedMTO}
+              disabled={saving}
             >
-              {saving ? "Saving…" : "💾 Save Budgeted Costs"}
+              {saving ? "Saving…" : "💾 Save"}
             </button>
             {saveMsg && (
               <span
@@ -1213,14 +1305,10 @@ function MaterialCostModal({ title, items, onClose, isActual, oaNo, fgCode }) {
               </span>
             )}
             <span
-              style={{
-                fontSize: 10,
-                color: C.textMuted,
-                marginLeft: "auto",
-              }}
+              style={{ fontSize: 10, color: C.textMuted, marginLeft: "auto" }}
             >
-              Editable only when cost is null or zero · Missing items shown at
-              top
+              Design Est. Cost editable for MTO items missing cost · Target Cost
+              editable for all MTO items
             </span>
           </div>
         )}
@@ -1229,16 +1317,132 @@ function MaterialCostModal({ title, items, onClose, isActual, oaNo, fgCode }) {
   );
 }
 
-// ─── ACTUAL PROFITABILITY TAB ─────────────────────────────────────────────────
-// Change 4: Column order → act mat, throughput, est mat, est tp (then OVC inputs, contribution, fixed cost, op profit)
-function ActualTab({ project, rows, inputs, setInput, onShowMaterial }) {
+// ─── PERCENTAGE INPUT PANEL (Change 2) ───────────────────────────────────────
+const PCT_FIELDS = [
+  { key: "commission", label: "Commission" },
+  { key: "freight", label: "Freight" },
+  { key: "packing", label: "Packing" },
+  { key: "ovc", label: "Other OVC" },
+  { key: "other_Direct", label: "Other Direct" },
+  { key: "fixed_Cost", label: "Fixed Cost" },
+];
+
+function PctPanel({ pctInputs, onChangePct, locked, onUnlock }) {
+  if (locked) {
+    return (
+      <div
+        style={{
+          display: "flex",
+          gap: 10,
+          flexWrap: "wrap",
+          alignItems: "center",
+          background: C.surface,
+          border: `1px solid ${C.border}`,
+          borderRadius: 9,
+          padding: "8px 14px",
+          marginBottom: 10,
+          flexShrink: 0,
+        }}
+      >
+        {PCT_FIELDS.map(({ key, label }) => (
+          <div
+            key={key}
+            style={{ display: "flex", gap: 4, alignItems: "center" }}
+          >
+            <span
+              style={{
+                fontSize: 10,
+                color: C.textMuted,
+                fontWeight: 600,
+                textTransform: "uppercase",
+                letterSpacing: "0.4px",
+              }}
+            >
+              {label}:
+            </span>
+            <span style={{ fontSize: 12, fontWeight: 700, color: C.text }}>
+              {Number(pctInputs[key] ?? 0).toFixed(2)}%
+            </span>
+          </div>
+        ))}
+        <span style={{ fontSize: 10, color: C.textMuted, marginLeft: 4 }}>
+          · % of Act. Sales
+        </span>
+        <button
+          style={{ ...S.btn("amber"), marginLeft: "auto" }}
+          onClick={onUnlock}
+        >
+          ✏️ Edit %
+        </button>
+      </div>
+    );
+  }
+  return (
+    <div
+      style={{
+        display: "flex",
+        gap: 10,
+        flexWrap: "wrap",
+        alignItems: "flex-end",
+        background: C.surface,
+        border: `1px solid ${C.border}`,
+        borderRadius: 9,
+        padding: "10px 14px",
+        marginBottom: 10,
+        flexShrink: 0,
+      }}
+    >
+      {PCT_FIELDS.map(({ key, label }) => (
+        <div
+          key={key}
+          style={{ display: "flex", flexDirection: "column", gap: 3 }}
+        >
+          <label
+            style={{
+              fontSize: 10,
+              fontWeight: 600,
+              textTransform: "uppercase",
+              letterSpacing: "0.5px",
+              color: C.textMuted,
+            }}
+          >
+            {label} %
+          </label>
+          <input
+            type="number"
+            min={0}
+            max={100}
+            step={0.01}
+            style={{ ...S.numInput, width: 80 }}
+            value={pctInputs[key] ?? ""}
+            placeholder="0"
+            onChange={(e) => onChangePct(key, e.target.value)}
+          />
+        </div>
+      ))}
+      <div
+        style={{
+          fontSize: 10,
+          color: C.textMuted,
+          alignSelf: "flex-end",
+          paddingBottom: 4,
+        }}
+      >
+        % of Act. Sales · applied to all rows
+      </div>
+    </div>
+  );
+}
+
+// ─── ACTUAL PROFITABILITY TAB (Change 1 + 2) ──────────────────────────────────
+// Change 1: Removed Est. Mat. and Est. TP columns
+// Change 2: Uses pctInputs instead of per-row inputs; no inline editable cells for OVC fields
+function ActualTab({ project, rows, pctInputs, onShowMaterial }) {
   const totals = useMemo(() => {
     let actSales = 0,
       actMat = 0,
       foc = 0,
       tp = 0,
-      estMat = 0,
-      estTp = 0,
       commission = 0,
       freight = 0,
       packing = 0,
@@ -1249,14 +1453,11 @@ function ActualTab({ project, rows, inputs, setInput, onShowMaterial }) {
       fixedCost = 0,
       opProfit = 0;
     rows.forEach((row) => {
-      const c = calcActRow(row, inputs[row.detail_Id]);
-      const e = calcEstRow(row);
+      const c = calcActRow(row, pctInputs);
       actSales += c.actSales;
       actMat += c.actMatCost;
       foc += c.foc;
       tp += c.throughput;
-      estMat += e.estMatCost;
-      estTp += e.throughput;
       commission += c.commission;
       freight += c.freight;
       packing += c.packing;
@@ -1272,8 +1473,6 @@ function ActualTab({ project, rows, inputs, setInput, onShowMaterial }) {
       actMat,
       foc,
       tp,
-      estMat,
-      estTp,
       commission,
       freight,
       packing,
@@ -1284,26 +1483,14 @@ function ActualTab({ project, rows, inputs, setInput, onShowMaterial }) {
       fixedCost,
       opProfit,
     };
-  }, [rows, inputs]);
-
-  const setVal = (rowId, field, val) => setInput(rowId, field, val);
-  const inp = (row, field) => (
-    <input
-      type="number"
-      min={0}
-      style={S.numInput}
-      value={inputs[row.detail_Id]?.[field] ?? ""}
-      placeholder="0"
-      onChange={(e) => setVal(row.detail_Id, field, e.target.value)}
-    />
-  );
+  }, [rows, pctInputs]);
 
   const thS = (color) => ({
     ...S.th(color),
     borderBottom: `2px solid ${color || C.borderLight}`,
   });
 
-  // Change 4: act mat → throughput → est mat → est tp
+  // Change 1: No Est. Mat. / Est. TP columns
   const headerRow = (
     <tr>
       {["Project", "OA No", "FG Code"].map((h, i) => (
@@ -1316,22 +1503,17 @@ function ActualTab({ project, rows, inputs, setInput, onShowMaterial }) {
       </th>
       <th style={thS(C.textMuted)}>Qty</th>
       <th style={thS(C.cyan)}>Act. Sales (₹)</th>
-      {/* Change 4: est mat after throughput */}
-      <th style={thS(C.amber)}>Est. Mat. (₹)</th>
-      <th style={thS(C.amber)}>Est. TP (₹)</th>
-      {/* Change 4: act mat first */}
       <th style={thS(C.violet)}>Act. Mat. (₹)</th>
       <th style={thS(C.textMuted)}>FOC (₹)</th>
       <th style={thS(C.sky)}>Throughput (₹)</th>
-
-      <th style={thS(C.violet)}>Commission</th>
-      <th style={thS(C.violet)}>Freight</th>
-      <th style={thS(C.violet)}>Packing</th>
-      <th style={thS(C.violet)}>Other OVC</th>
-      <th style={thS(C.violet)}>Other Direct</th>
+      <th style={thS(C.violet)}>Commission (₹)</th>
+      <th style={thS(C.violet)}>Freight (₹)</th>
+      <th style={thS(C.violet)}>Packing (₹)</th>
+      <th style={thS(C.violet)}>Other OVC (₹)</th>
+      <th style={thS(C.violet)}>Other Direct (₹)</th>
       <th style={thS(C.violet)}>Total OVC (₹)</th>
       <th style={thS(C.emerald)}>Contribution (₹)</th>
-      <th style={thS(C.amber)}>Fixed Cost</th>
+      <th style={thS(C.amber)}>Fixed Cost (₹)</th>
       <th style={thS(C.cyan)}>Op. Profit (₹)</th>
     </tr>
   );
@@ -1343,17 +1525,10 @@ function ActualTab({ project, rows, inputs, setInput, onShowMaterial }) {
       </td>
       <td style={S.totalTd()}></td>
       <td style={S.totalTd()}>₹{fmt(totals.actSales)}</td>
-      {/* Change 4: act mat → throughput → est mat → est tp */}
       <td style={S.totalTd()}>₹{fmt(totals.actMat)}</td>
       <td style={S.totalTd()}>₹{fmt(totals.foc)}</td>
       <td style={{ ...S.totalTd(), color: totals.tp < 0 ? C.rose : C.sky }}>
         ₹{fmt(totals.tp)}
-      </td>
-      <td style={S.totalTd()}>₹{fmt(totals.estMat)}</td>
-      <td
-        style={{ ...S.totalTd(), color: totals.estTp < 0 ? C.rose : C.amber }}
-      >
-        ₹{fmt(totals.estTp)}
       </td>
       <td style={S.totalTd()}>₹{fmt(totals.commission)}</td>
       <td style={S.totalTd()}>₹{fmt(totals.freight)}</td>
@@ -1414,7 +1589,7 @@ function ActualTab({ project, rows, inputs, setInput, onShowMaterial }) {
         <table
           style={{
             ...S.table,
-            minWidth: 1400,
+            minWidth: 1300,
             borderCollapse: "separate",
             borderSpacing: 0,
           }}
@@ -1422,10 +1597,8 @@ function ActualTab({ project, rows, inputs, setInput, onShowMaterial }) {
           <thead>{headerRow}</thead>
           <tbody>
             {rows.map((row, ri) => {
-              const c = calcActRow(row, inputs[row.detail_Id]);
-              const e = calcEstRow(row);
+              const c = calcActRow(row, pctInputs);
               const actHasIssue = row._actMatIncomplete;
-              const estHasIssue = row._estMatIncomplete;
               return (
                 <tr
                   key={row.detail_Id ?? ri}
@@ -1479,38 +1652,12 @@ function ActualTab({ project, rows, inputs, setInput, onShowMaterial }) {
                   <td style={{ ...S.td, fontWeight: 600 }}>
                     ₹{fmt(c.actSales)}
                   </td>
-                  {/* Change 4: act mat → throughput → est mat → est tp */}
-                  <td style={S.td}>
-                    <span
-                      style={{
-                        ...(estHasIssue ? S.redCell : {}),
-                        ...S.clickableCell,
-                        color: estHasIssue ? C.rose : C.amber,
-                        fontWeight: 600,
-                      }}
-                      title="Click to view estimated material breakdown"
-                      onClick={() => onShowMaterial(row, false)}
-                    >
-                      ₹{fmt(e.estMatCost)}
-                    </span>
-                  </td>
                   <td
                     style={{
-                      ...S.td,
-                      fontWeight: 700,
-                      color: e.throughput < 0 ? C.rose : C.amber,
-                      background:
-                        e.throughput < 0 ? "rgba(225,29,72,0.04)" : undefined,
-                    }}
-                  >
-                    ₹{fmt(e.throughput)}
-                  </td>
-                  <td
-                    style={{
-                      ...S.td,
                       background: actHasIssue
                         ? "rgba(225,29,72,0.06)"
                         : undefined,
+                      ...S.td,
                     }}
                   >
                     <span
@@ -1538,12 +1685,20 @@ function ActualTab({ project, rows, inputs, setInput, onShowMaterial }) {
                   >
                     ₹{fmt(c.throughput)}
                   </td>
-
-                  <td style={S.td}>{inp(row, "commission")}</td>
-                  <td style={S.td}>{inp(row, "freight")}</td>
-                  <td style={S.td}>{inp(row, "packing")}</td>
-                  <td style={S.td}>{inp(row, "ovc")}</td>
-                  <td style={S.td}>{inp(row, "other_Direct")}</td>
+                  {/* Change 2: calculated from pct, read-only display */}
+                  <td style={{ ...S.td, color: C.textDim }}>
+                    ₹{fmt(c.commission)}
+                  </td>
+                  <td style={{ ...S.td, color: C.textDim }}>
+                    ₹{fmt(c.freight)}
+                  </td>
+                  <td style={{ ...S.td, color: C.textDim }}>
+                    ₹{fmt(c.packing)}
+                  </td>
+                  <td style={{ ...S.td, color: C.textDim }}>₹{fmt(c.ovc)}</td>
+                  <td style={{ ...S.td, color: C.textDim }}>
+                    ₹{fmt(c.otherDirect)}
+                  </td>
                   <td style={{ ...S.td, color: C.violet, fontWeight: 700 }}>
                     ₹{fmt(c.totalOVC)}
                   </td>
@@ -1556,7 +1711,9 @@ function ActualTab({ project, rows, inputs, setInput, onShowMaterial }) {
                   >
                     ₹{fmt(c.contribution)}
                   </td>
-                  <td style={S.td}>{inp(row, "fixed_Cost")}</td>
+                  <td style={{ ...S.td, color: C.textDim }}>
+                    ₹{fmt(c.fixedCost)}
+                  </td>
                   <td
                     style={{
                       ...S.td,
@@ -1582,9 +1739,7 @@ function ActualTab({ project, rows, inputs, setInput, onShowMaterial }) {
 }
 
 // ─── EST VS ACTUAL TAB ────────────────────────────────────────────────────────
-// Change 3: act sales → est mat → est tp → act mat → act tp → mat var → tp var → contribution → op profit
-// Change 5: mat var = act mat - est mat (was est - act)
-function EstVsActTab({ rows, inputs, onShowEstMat, onShowActMat }) {
+function EstVsActTab({ rows, pctInputs, onShowEstMat, onShowActMat }) {
   const thS = (color) => ({
     ...S.th(color),
     borderBottom: `2px solid ${color || C.borderLight}`,
@@ -1602,8 +1757,7 @@ function EstVsActTab({ rows, inputs, onShowEstMat, onShowActMat }) {
       opProfit = 0;
     rows.forEach((row) => {
       const estC = calcEstRow(row);
-      const actC = calcActRow(row, inputs[row.detail_Id]);
-      // Change 5: mat var = act mat - est mat
+      const actC = calcActRow(row, pctInputs);
       const mv = actC.actMatCost - estC.estMatCost;
       const tv = actC.throughput - estC.throughput;
       actSales += actC.actSales;
@@ -1627,7 +1781,7 @@ function EstVsActTab({ rows, inputs, onShowEstMat, onShowActMat }) {
       contribution,
       opProfit,
     };
-  }, [rows, inputs]);
+  }, [rows, pctInputs]);
 
   return (
     <>
@@ -1637,7 +1791,6 @@ function EstVsActTab({ rows, inputs, onShowEstMat, onShowActMat }) {
           value={`₹${fmt(totals.actSales)}`}
           accent={C.cyan}
         />
-        {/* Change 5: mat var sign flipped — positive now means over-spend (act > est), negative = under-spend */}
         <MetricCard
           label="Mat. Variance"
           value={`₹${fmt(totals.matVar)}`}
@@ -1683,7 +1836,6 @@ function EstVsActTab({ rows, inputs, onShowEstMat, onShowActMat }) {
                 Description
               </th>
               <th style={thS(C.cyan)}>Act. Sales (₹)</th>
-              {/* Change 3: est mat → est tp → act mat → act tp → mat var → tp var */}
               <th style={thS(C.amber)}>Est. Mat. (₹)</th>
               <th style={thS(C.amber)}>Est. TP (₹)</th>
               <th style={thS(C.violet)}>Act. Mat. (₹)</th>
@@ -1697,8 +1849,7 @@ function EstVsActTab({ rows, inputs, onShowEstMat, onShowActMat }) {
           <tbody>
             {rows.map((row, ri) => {
               const estC = calcEstRow(row);
-              const actC = calcActRow(row, inputs[row.detail_Id]);
-              // Change 5: mat var = act mat - est mat
+              const actC = calcActRow(row, pctInputs);
               const matVar = actC.actMatCost - estC.estMatCost;
               const tpVar = actC.throughput - estC.throughput;
               const estHasIssue = row._estMatIncomplete;
@@ -1755,7 +1906,6 @@ function EstVsActTab({ rows, inputs, onShowEstMat, onShowActMat }) {
                   <td style={{ ...S.td, fontWeight: 600 }}>
                     ₹{fmt(actC.actSales)}
                   </td>
-                  {/* Change 3: est mat → est tp → act mat → act tp → mat var → tp var */}
                   <td style={S.td}>
                     <span
                       style={{
@@ -1807,7 +1957,6 @@ function EstVsActTab({ rows, inputs, onShowEstMat, onShowActMat }) {
                   >
                     ₹{fmt(actC.throughput)}
                   </td>
-                  {/* Change 5: mat var = act - est; positive = overspend (red), negative = saving (green) */}
                   <td
                     style={{
                       ...S.td,
@@ -1854,7 +2003,6 @@ function EstVsActTab({ rows, inputs, onShowEstMat, onShowActMat }) {
                 🔢 Grand Total
               </td>
               <td style={S.totalTd()}>₹{fmt(totals.actSales)}</td>
-              {/* Change 3: footer order matches header */}
               <td style={S.totalTd()}>₹{fmt(totals.estMat)}</td>
               <td
                 style={{
@@ -1873,7 +2021,6 @@ function EstVsActTab({ rows, inputs, onShowEstMat, onShowActMat }) {
               >
                 ₹{fmt(totals.actTP)}
               </td>
-              {/* Change 5: mat var coloring flipped */}
               <td style={S.totalTd(totals.matVar <= 0)}>
                 {totals.matVar > 0 ? "+" : ""}₹{fmt(totals.matVar)}
               </td>
@@ -1895,12 +2042,15 @@ function EstVsActTab({ rows, inputs, onShowEstMat, onShowActMat }) {
 }
 
 // ─── VIEW SCREEN ──────────────────────────────────────────────────────────────
-// Change 2: default tab = "comparison" (est vs actual first), actual profitability second
 function ViewScreen({ pid, onNavigate, savedInputs, onSaveInputs }) {
-  const [tab, setTab] = useState("comparison"); // Change 2: default to comparison
+  const [tab, setTab] = useState("comparison");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [inputs, setInputsState] = useState(savedInputs[pid] || {});
+  // Change 2: pctInputs holds percentages (one set per project)
+  const [pctInputs, setPctInputsState] = useState(savedInputs[pid]?.pct || {});
+  const [pctLocked, setPctLocked] = useState(
+    Object.keys(savedInputs[pid]?.pct || {}).length > 0,
+  );
   const [matModal, setMatModal] = useState(null);
   const [rawRows, setRawRows] = useState([]);
 
@@ -1908,8 +2058,22 @@ function ViewScreen({ pid, onNavigate, savedInputs, onSaveInputs }) {
     setLoading(true);
     ProjectProfitabilityService.GetProjectDetails(pid)
       .then((res) => {
-        if (res?.status_Code === 200) setRawRows(res.data || []);
-        else setError("Failed to load project details.");
+        if (res?.status_Code === 200) {
+          const rows = res.data || [];
+          setRawRows(rows);
+          // If pct not yet loaded from savedInputs, try from first row's saved fields
+          if (Object.keys(pctInputs).length === 0 && rows.length > 0) {
+            const r = rows[0];
+            const loaded = {};
+            PCT_FIELDS.forEach(({ key }) => {
+              if (r[key] != null) loaded[key] = r[key];
+            });
+            if (Object.keys(loaded).length > 0) {
+              setPctInputsState(loaded);
+              setPctLocked(true);
+            }
+          }
+        } else setError("Failed to load project details.");
       })
       .catch(() => setError("Error loading project details."))
       .finally(() => setLoading(false));
@@ -1917,25 +2081,23 @@ function ViewScreen({ pid, onNavigate, savedInputs, onSaveInputs }) {
 
   const { enrichedRows: rows } = useMaterialCosts(rawRows);
 
-  const setInput = useCallback((rowId, field, val) => {
-    setInputsState((prev) => ({
-      ...prev,
-      [rowId]: { ...(prev[rowId] || {}), [field]: val },
-    }));
+  const handleChangePct = useCallback((key, val) => {
+    setPctInputsState((prev) => ({ ...prev, [key]: val }));
+    setPctLocked(false);
   }, []);
 
   const handleSave = () => {
-    onSaveInputs(pid, inputs);
+    onSaveInputs(pid, { pct: pctInputs });
+    setPctLocked(true);
     rows.forEach((row) => {
-      const inp = inputs[row.detail_Id] || {};
       ProjectProfitabilityService.SaveProjectProfitability(
         row.detail_Id,
-        inp.commission ?? 0,
-        inp.freight ?? 0,
-        inp.packing ?? 0,
-        inp.ovc ?? 0,
-        inp.other_Direct ?? 0,
-        inp.fixed_Cost ?? 0,
+        pctInputs.commission ?? 0,
+        pctInputs.freight ?? 0,
+        pctInputs.packing ?? 0,
+        pctInputs.ovc ?? 0,
+        pctInputs.other_Direct ?? 0,
+        pctInputs.fixed_Cost ?? 0,
         "current_user",
       ).catch(console.error);
     });
@@ -1994,7 +2156,6 @@ function ViewScreen({ pid, onNavigate, savedInputs, onSaveInputs }) {
       </div>
     );
 
-  // Change 2: est vs actual first in tab order, actual profitability second
   const tabs = [
     { key: "comparison", label: "⚖️ Est vs Actual" },
     { key: "actual", label: "📈 Actual Profitability" },
@@ -2029,6 +2190,15 @@ function ViewScreen({ pid, onNavigate, savedInputs, onSaveInputs }) {
           💾 Save
         </button>
       </div>
+
+      {/* Change 2: Percentage panel shown above tabs on both views */}
+      <PctPanel
+        pctInputs={pctInputs}
+        onChangePct={handleChangePct}
+        locked={pctLocked}
+        onUnlock={() => setPctLocked(false)}
+      />
+
       <div style={S.tabBar}>
         {tabs.map((t) => (
           <button
@@ -2040,19 +2210,19 @@ function ViewScreen({ pid, onNavigate, savedInputs, onSaveInputs }) {
           </button>
         ))}
       </div>
+
       {tab === "actual" && (
         <ActualTab
           project={pid}
           rows={rows}
-          inputs={inputs}
-          setInput={setInput}
+          pctInputs={pctInputs}
           onShowMaterial={handleShowMaterial}
         />
       )}
       {tab === "comparison" && (
         <EstVsActTab
           rows={rows}
-          inputs={inputs}
+          pctInputs={pctInputs}
           onShowEstMat={(row) => handleShowMaterial(row, false)}
           onShowActMat={(row) => handleShowMaterial(row, true)}
         />
@@ -2062,7 +2232,6 @@ function ViewScreen({ pid, onNavigate, savedInputs, onSaveInputs }) {
 }
 
 // ─── CREATE SCREEN ────────────────────────────────────────────────────────────
-// Change 2: default tab = "comparison"
 function CreateScreen({ onNavigate, savedInputs, onSaveInputs, initialPid }) {
   const [pendingProjects, setPendingProjects] = useState([]);
   const [loadingList, setLoadingList] = useState(true);
@@ -2072,13 +2241,19 @@ function CreateScreen({ onNavigate, savedInputs, onSaveInputs, initialPid }) {
   const [rawRows, setRawRows] = useState([]);
   const [loadingRows, setLoadingRows] = useState(false);
   const { enrichedRows: rows } = useMaterialCosts(rawRows);
-  const [inputs, setInputsState] = useState(
-    initialPid && savedInputs[initialPid]
-      ? JSON.parse(JSON.stringify(savedInputs[initialPid]))
+  // Change 2: pctInputs per project
+  const [pctInputs, setPctInputsState] = useState(
+    initialPid && savedInputs[initialPid]?.pct
+      ? { ...savedInputs[initialPid].pct }
       : {},
   );
+  const [pctLocked, setPctLocked] = useState(
+    initialPid
+      ? Object.keys(savedInputs[initialPid]?.pct || {}).length > 0
+      : false,
+  );
   const [saving, setSaving] = useState(false);
-  const [tab, setTab] = useState("comparison"); // Change 2: default to comparison
+  const [tab, setTab] = useState("comparison");
   const [matModal, setMatModal] = useState(null);
   const dropdownRef = useRef(null);
 
@@ -2115,16 +2290,34 @@ function CreateScreen({ onNavigate, savedInputs, onSaveInputs, initialPid }) {
     setLoadingRows(true);
     ProjectProfitabilityService.GetProjectDetails(selectedPid)
       .then((res) => {
-        if (res?.status_Code === 200) setRawRows(res.data || []);
-        else setRawRows([]);
+        if (res?.status_Code === 200) {
+          const rows = res.data || [];
+          setRawRows(rows);
+          const saved = savedInputs[selectedPid]?.pct || {};
+          if (Object.keys(saved).length > 0) {
+            setPctInputsState({ ...saved });
+            setPctLocked(true);
+          } else if (rows.length > 0) {
+            const r = rows[0];
+            const loaded = {};
+            PCT_FIELDS.forEach(({ key }) => {
+              if (r[key] != null) loaded[key] = r[key];
+            });
+            if (Object.keys(loaded).length > 0) {
+              setPctInputsState(loaded);
+              setPctLocked(true);
+            } else {
+              setPctInputsState({});
+              setPctLocked(false);
+            }
+          } else {
+            setPctInputsState({});
+            setPctLocked(false);
+          }
+        } else setRawRows([]);
       })
       .catch(console.error)
       .finally(() => setLoadingRows(false));
-    setInputsState(
-      savedInputs[selectedPid]
-        ? JSON.parse(JSON.stringify(savedInputs[selectedPid]))
-        : {},
-    );
   }, [selectedPid]);
 
   useEffect(() => {
@@ -2144,11 +2337,9 @@ function CreateScreen({ onNavigate, savedInputs, onSaveInputs, initialPid }) {
     [pendingProjects, projectSearch],
   );
 
-  const setInput = useCallback((rowId, field, val) => {
-    setInputsState((prev) => ({
-      ...prev,
-      [rowId]: { ...(prev[rowId] || {}), [field]: val },
-    }));
+  const handleChangePct = useCallback((key, val) => {
+    setPctInputsState((prev) => ({ ...prev, [key]: val }));
+    setPctLocked(false);
   }, []);
 
   const handleSave = async () => {
@@ -2156,21 +2347,21 @@ function CreateScreen({ onNavigate, savedInputs, onSaveInputs, initialPid }) {
     setSaving(true);
     try {
       await Promise.all(
-        rows.map((row) => {
-          const inp = inputs[row.detail_Id] || {};
-          return ProjectProfitabilityService.SaveProjectProfitability(
+        rows.map((row) =>
+          ProjectProfitabilityService.SaveProjectProfitability(
             row.detail_Id,
-            inp.commission ?? 0,
-            inp.freight ?? 0,
-            inp.packing ?? 0,
-            inp.ovc ?? 0,
-            inp.other_Direct ?? 0,
-            inp.fixed_Cost ?? 0,
+            pctInputs.commission ?? 0,
+            pctInputs.freight ?? 0,
+            pctInputs.packing ?? 0,
+            pctInputs.ovc ?? 0,
+            pctInputs.other_Direct ?? 0,
+            pctInputs.fixed_Cost ?? 0,
             "current_user",
-          );
-        }),
+          ),
+        ),
       );
-      onSaveInputs(selectedPid, inputs);
+      onSaveInputs(selectedPid, { pct: pctInputs });
+      setPctLocked(true);
       onNavigate("view", selectedPid);
     } catch (e) {
       console.error(e);
@@ -2202,7 +2393,6 @@ function CreateScreen({ onNavigate, savedInputs, onSaveInputs, initialPid }) {
     }
   }, []);
 
-  // Change 2: est vs actual first in tab order
   const tabs = [
     { key: "comparison", label: "⚖️ Est vs Actual" },
     { key: "actual", label: "📈 Actual Profitability" },
@@ -2415,6 +2605,13 @@ function CreateScreen({ onNavigate, savedInputs, onSaveInputs, initialPid }) {
 
       {selectedPid && !loadingRows && rows.length > 0 && (
         <>
+          {/* Change 2: Percentage panel */}
+          <PctPanel
+            pctInputs={pctInputs}
+            onChangePct={handleChangePct}
+            locked={pctLocked}
+            onUnlock={() => setPctLocked(false)}
+          />
           <div style={S.tabBar}>
             {tabs.map((t) => (
               <button
@@ -2430,15 +2627,14 @@ function CreateScreen({ onNavigate, savedInputs, onSaveInputs, initialPid }) {
             <ActualTab
               project={selectedPid}
               rows={rows}
-              inputs={inputs}
-              setInput={setInput}
+              pctInputs={pctInputs}
               onShowMaterial={handleShowMaterial}
             />
           )}
           {tab === "comparison" && (
             <EstVsActTab
               rows={rows}
-              inputs={inputs}
+              pctInputs={pctInputs}
               onShowEstMat={(row) => handleShowMaterial(row, false)}
               onShowActMat={(row) => handleShowMaterial(row, true)}
             />
@@ -2450,7 +2646,6 @@ function CreateScreen({ onNavigate, savedInputs, onSaveInputs, initialPid }) {
 }
 
 // ─── DASHBOARD ────────────────────────────────────────────────────────────────
-// Change 1: Add Est. Throughput, Act. Throughput, Op. Profit columns; hide Status column
 function DashboardScreen({ onNavigate, savedInputs }) {
   const [projects, setProjects] = useState([]);
   const [totalRecords, setTotalRecords] = useState(0);
@@ -2555,11 +2750,9 @@ function DashboardScreen({ onNavigate, savedInputs }) {
               <th style={S.th()}>Total Sales (₹)</th>
               <th style={S.th()}>Total Qty</th>
               <th style={{ ...S.th(), ...S.thLeft }}>PO No</th>
-              {/* Change 1: new columns */}
               <th style={S.th(C.amber)}>Est. Throughput (₹)</th>
               <th style={S.th(C.sky)}>Act. Throughput (₹)</th>
               <th style={S.th(C.cyan)}>Op. Profit (₹)</th>
-              {/* Change 1: Status column removed */}
               <th style={S.th()}></th>
             </tr>
           </thead>
@@ -2611,7 +2804,6 @@ function DashboardScreen({ onNavigate, savedInputs }) {
                   ...new Set(proj.details.map((d) => d.pO_NO).filter(Boolean)),
                 ];
 
-                // Change 1: compute est throughput, act throughput, op profit from details
                 const estThroughput = proj.details.reduce((s, d) => {
                   const salesValue = Number(d.sales_Value ?? 0);
                   const estMatCost = Number(d.total_Est_Material_Cost ?? 0);
@@ -2624,27 +2816,32 @@ function DashboardScreen({ onNavigate, savedInputs }) {
                   return s + (salesValue - actMatCost);
                 }, 0);
 
+                const pct = savedInputs[proj.id]?.pct || {};
                 const opProfit = proj.details.reduce((s, d) => {
-                  const inp = savedInputs[proj.id]?.[d.detail_Id] ?? {};
                   const salesValue = Number(d.sales_Value ?? 0);
                   const actMatCost = Number(d.total_Act_Material_Cost ?? 0);
                   const throughput = salesValue - actMatCost;
-                  const commission = Number(
-                    inp.commission ?? d.commission ?? 0,
-                  );
-                  const freight = Number(inp.freight ?? d.freight ?? 0);
-                  const packing = Number(inp.packing ?? d.packing ?? 0);
-                  const ovc = Number(inp.ovc ?? d.ovc ?? 0);
-                  const otherDirect = Number(
-                    inp.other_Direct ?? d.other_Direct ?? 0,
-                  );
-                  const fixedCost = Number(inp.fixed_Cost ?? d.fixed_Cost ?? 0);
+                  const commission =
+                    (salesValue * Number(pct.commission ?? d.commission ?? 0)) /
+                    100;
+                  const freight =
+                    (salesValue * Number(pct.freight ?? d.freight ?? 0)) / 100;
+                  const packing2 =
+                    (salesValue * Number(pct.packing ?? d.packing ?? 0)) / 100;
+                  const ovc =
+                    (salesValue * Number(pct.ovc ?? d.ovc ?? 0)) / 100;
+                  const otherDirect =
+                    (salesValue *
+                      Number(pct.other_Direct ?? d.other_Direct ?? 0)) /
+                    100;
+                  const fixedCost =
+                    (salesValue * Number(pct.fixed_Cost ?? d.fixed_Cost ?? 0)) /
+                    100;
                   const totalOVC =
-                    commission + freight + packing + ovc + otherDirect;
+                    commission + freight + packing2 + ovc + otherDirect;
                   return s + (throughput - totalOVC - fixedCost);
                 }, 0);
 
-                // Change 1: act throughput > est throughput → green, else red
                 const tpColor =
                   actThroughput >= estThroughput ? C.emerald : C.rose;
                 const tpBg =
@@ -2724,11 +2921,9 @@ function DashboardScreen({ onNavigate, savedInputs }) {
                         {poNos.length > 1 && <span> +{poNos.length - 1}</span>}
                       </div>
                     </td>
-                    {/* Change 1: Est. Throughput */}
                     <td style={{ ...S.td, fontWeight: 600, color: C.amber }}>
                       {estThroughput !== 0 ? `₹${fmt(estThroughput)}` : "—"}
                     </td>
-                    {/* Change 1: Act. Throughput — green if >= est, red otherwise */}
                     <td
                       style={{
                         ...S.td,
@@ -2739,7 +2934,6 @@ function DashboardScreen({ onNavigate, savedInputs }) {
                     >
                       {actThroughput !== 0 ? `₹${fmt(actThroughput)}` : "—"}
                     </td>
-                    {/* Change 1: Op. Profit */}
                     <td
                       style={{
                         ...S.td,
@@ -2749,7 +2943,6 @@ function DashboardScreen({ onNavigate, savedInputs }) {
                     >
                       {opProfit !== 0 ? `₹${fmt(opProfit)}` : "—"}
                     </td>
-                    {/* Change 1: Status column removed */}
                     <td
                       style={{
                         ...S.td,
@@ -2764,12 +2957,6 @@ function DashboardScreen({ onNavigate, savedInputs }) {
                       >
                         View →
                       </button>
-                      {/* <button
-                        style={S.btn("primary")}
-                        onClick={() => onNavigate("create", proj.id)}
-                      >
-                        + Analyse
-                      </button> */}
                     </td>
                   </tr>
                 );
@@ -2824,7 +3011,6 @@ export default function App() {
     setScreen(to);
     setActivePid(pid);
   }, []);
-
   const handleSave = useCallback((pid, inputs) => {
     setSavedInputs((prev) => ({ ...prev, [pid]: inputs }));
   }, []);
